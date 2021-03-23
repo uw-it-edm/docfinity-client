@@ -1,11 +1,72 @@
-plugins {
-    id 'java-library'
+buildscript {
+  repositories {
+    jcenter()
+    maven { url "https://raw.githubusercontent.com/uw-it-edm/edm-artifacts/master" }
+    maven { url "https://plugins.gradle.org/m2/" }
+  }
+  dependencies {
+    classpath "edu.uw.concert:gradle-gitflow:0.3.1"
+    classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.21.0"
+  }
 }
+
+apply plugin: "java"
+apply plugin: "com.jfrog.artifactory"
+apply plugin: "edu.uw.concert.gitflow"
+apply plugin: "maven-publish"
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 repositories {
     jcenter()
 }
 
 dependencies {
-    testImplementation 'junit:junit:4.12'
+    testImplementation "junit:junit:4.12"
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            groupId = "edu.uw.edm.docfinity"
+        }
+    }
+}
+
+artifactory {
+    contextUrl = System.getenv('ARTIFACTORY_CONTEXT')
+
+    publish {
+        repository {
+            username = System.getenv("ARTIFACTORY_PUBLISH_USER")
+            password = System.getenv("ARTIFACTORY_PUBLISH_PASSWORD")
+
+            // By default publish to 'snapshot' repository.
+            def inferredRepoKey = System.getenv('ARTIFACTORY_SNAPSHOT_REPO')
+
+            // Switch to 'release' repo if the version is detected as not being 'in-development'.
+            if (!version.toString().contains("SNAPSHOT") && !version.toString().contains("dirty")) {
+                inferredRepoKey = System.getenv('ARTIFACTORY_RELEASE_REPO')
+            }
+
+            repoKey = inferredRepoKey
+            logger.lifecycle "Using $inferredRepoKey as publishing repo"
+        }
+
+        defaults {
+            publications('mavenJava')
+        }
+    }
+}
+
+// make sure we have an artifact to publish
+artifactoryPublish.dependsOn jar
+
+// Skip publishing if gitflow marks this version as in-development.
+if (version.toString().contains("dirty")) {
+    artifactoryPublish.skip = true // as documented
+    artifactoryPublish.onlyIf { false } // NOT documented
 }
