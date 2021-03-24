@@ -1,6 +1,13 @@
 name: CI Build
 
-on: [push]
+on:
+  push:
+    tags:
+      - '*'
+    branches:
+      - develop
+      - 'release/**'
+      - 'feature/**'
 
 jobs:
   build:
