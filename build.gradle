@@ -10,63 +10,70 @@ buildscript {
   }
 }
 
-apply plugin: "java"
-apply plugin: "com.jfrog.artifactory"
-apply plugin: "edu.uw.concert.gitflow"
-apply plugin: "maven-publish"
+allprojects {
+    apply plugin: "java"
+    apply plugin: "com.jfrog.artifactory"
+    apply plugin: "edu.uw.concert.gitflow"
+    apply plugin: "maven-publish"
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
 
-repositories {
-    jcenter()
-}
+    repositories {
+        jcenter()
+    }
 
-dependencies {
-    testImplementation "junit:junit:4.13.2"
-}
+    dependencies {
+        testImplementation "junit:junit:4.13.2"
+    }
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
+    gitflow {
+        // fix git repository to ./ to work with subprojects.
+        repositoryRoot './'
+    }
 
-            groupId = "edu.uw.edm.docfinity"
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                from components.java
+
+                groupId = "edu.uw.edm.docfinity"
+            }
         }
     }
-}
 
-artifactory {
-    contextUrl = System.getenv('ARTIFACTORY_CONTEXT')
+    artifactory {
+        contextUrl = System.getenv('ARTIFACTORY_CONTEXT')
 
-    publish {
-        repository {
-            username = System.getenv("ARTIFACTORY_PUBLISH_USER")
-            password = System.getenv("ARTIFACTORY_PUBLISH_PASSWORD")
+        publish {
+            repository {
+                username = System.getenv("ARTIFACTORY_PUBLISH_USER")
+                password = System.getenv("ARTIFACTORY_PUBLISH_PASSWORD")
 
-            // By default publish to 'snapshot' repository.
-            def inferredRepoKey = System.getenv('ARTIFACTORY_SNAPSHOT_REPO')
+                // By default publish to 'snapshot' repository.
+                def inferredRepoKey = System.getenv('ARTIFACTORY_SNAPSHOT_REPO')
 
-            // Switch to 'release' repo if the version is detected as not being 'in-development'.
-            if (!version.toString().contains("SNAPSHOT") && !version.toString().contains("dirty")) {
-                inferredRepoKey = System.getenv('ARTIFACTORY_RELEASE_REPO')
+                // Switch to 'release' repo if the version is detected as not being 'in-development'.
+                if (!version.toString().contains("SNAPSHOT") && !version.toString().contains("dirty")) {
+                    inferredRepoKey = System.getenv('ARTIFACTORY_RELEASE_REPO')
+                }
+
+                repoKey = inferredRepoKey
+                logger.lifecycle "Using $inferredRepoKey as publishing repo"
             }
 
-            repoKey = inferredRepoKey
-            logger.lifecycle "Using $inferredRepoKey as publishing repo"
-        }
-
-        defaults {
-            publications('mavenJava')
+            defaults {
+                publications('mavenJava')
+            }
         }
     }
-}
 
-// make sure we have an artifact to publish
-artifactoryPublish.dependsOn jar
+    // make sure we have an artifact to publish
+    artifactoryPublish.dependsOn jar
 
-// Skip publishing if gitflow marks this version as in-development.
-if (version.toString().contains("dirty")) {
-    artifactoryPublish.skip = true // as documented
-    artifactoryPublish.onlyIf { false } // NOT documented
+    // Skip publishing if gitflow marks this version as in-development.
+    if (version.toString().contains("dirty")) {
+        artifactoryPublish.skip = true // as documented
+        artifactoryPublish.onlyIf { false } // NOT documented
+    }
 }
