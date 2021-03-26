@@ -57,15 +57,11 @@ REST API if it becomes necessary. For more information see [EDM DocFinity Servic
 ./gradlew build
 ```
 
-## Run test against a live server
+## Debug against a live server
 
-### - with JUnit
+TODO: Add documentation of how to quickly debug library against live responses.
 
-The simplest way to run and debug the client library againt a live DocFinity server is to use the `docfinity-client-cli/src/test/java/edu/uw/edm/docfinity/cli/DocFinityClientCLITest.java` unit test. This can be executed within your IDE.
-
-TODO: Add documentation of how to set up DocFinity url and API key for the unit test.
-
-### - with Gradle
+## Run CLI with Gradle
 
 You can also use the CLI with arguments from gradle (instead of running from the .jar file):
 
