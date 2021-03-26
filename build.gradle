@@ -10,7 +10,7 @@ buildscript {
   }
 }
 
-allprojects {
+subprojects {
     apply plugin: "java"
     apply plugin: "com.jfrog.artifactory"
     apply plugin: "edu.uw.concert.gitflow"
@@ -28,8 +28,8 @@ allprojects {
     }
 
     gitflow {
-        // fix git repository to ./ to work with subprojects.
-        repositoryRoot './'
+        // Child projects need to change location of the git repo to the root project.
+        repositoryRoot rootDir.path
     }
 
     publishing {
