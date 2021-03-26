@@ -57,6 +57,18 @@ REST API if it becomes necessary. For more information see [EDM DocFinity Servic
 ./gradlew build
 ```
 
+## Setup code formatting
+
+This project uses the [Gradle Spotless Plugin](https://plugins.gradle.org/plugin/com.diffplug.gradle.spotless) to enforce the [Google Java Style Guide](https://google.github.io/styleguide/javaguide) (with the addition that it sets indendation to 4 spaces instead of 2). 
+
+Note that if code fails the style guide it will fail the build with a description of the errors. You can also fix all the errors locally by running `./gradlew spotlessApply`.
+
+Setup your IDE to use the formatter:
+
+- Set it to run `./gradlew spotlessDiagnose` to show invalid formatting.
+- Set it to run `./gradlew spotlessApply` on save to automatically fix formatting.
+- If you use VSCode, install the [Spotless Gradle Extension](https://marketplace.visualstudio.com/items?itemName=richardwillis.vscode-spotless-gradle) that can automatically apply these settings.
+
 ## Debug against a live server
 
 TODO: Add documentation of how to quickly debug library against live responses.
