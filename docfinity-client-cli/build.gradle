@@ -1,0 +1,13 @@
+jar {
+    baseName = project.name
+}
+
+dependencies {
+    compile project(":docfinity-client")
+}
+
+apply plugin: "application"
+
+application {
+    mainClass = "edu.uw.edm.docfinity.DocFinityClientCLI"
+}

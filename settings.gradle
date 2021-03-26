@@ -2,3 +2,5 @@ rootProject.name = 'docfinity-client-root'
 
 include 'docfinity-client'
 project(":docfinity-client").name = "docfinity-client"
+include 'docfinity-client-cli'
+project(":docfinity-client-cli").name = "docfinity-client-cli"
