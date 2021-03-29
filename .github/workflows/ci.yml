@@ -36,5 +36,5 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_TITLE: docfinity-client Build Alert
+          SLACK_TITLE: ${{ github.repository }} Build Alert
           SLACK_COLOR: ${{ job.status }}
