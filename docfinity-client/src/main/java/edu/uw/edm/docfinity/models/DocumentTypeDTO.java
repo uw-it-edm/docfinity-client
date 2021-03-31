@@ -11,9 +11,9 @@ import lombok.RequiredArgsConstructor;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @RequiredArgsConstructor
 @NoArgsConstructor
-public class DocumentTypeResponse {
-    private String categoryId;
-    private String categoryName;
+public class DocumentTypeDTO {
     private @NonNull String id;
     private String name;
+    private String categoryId;
+    private String categoryName;
 }

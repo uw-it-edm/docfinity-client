@@ -6,7 +6,6 @@ Table of Contents:
 
 1. [Install](#Install)
 1. [Use](#Use)
-1. [CLI](#CLI)
 1. [Design](#Design)
 1. [Setup for Development](#Setup-for-Development)
 1. [Integration Tests](#Integration-Tests)
@@ -26,16 +25,6 @@ dependencies {
 
 TODO: Once library is implemented add sample use case here.
 
-# CLI
-
-To creates/update documents from command line, you can use the cli published in UW Artifactory [here](https://artifact.s.uw.edu/artifactory/webapp/#/artifacts/browse/tree/General/eaiw-release-local/edu/uw/edm/docfinity/docfinity-client-cli/).
-
-Samples:
-
-```
-TODO: Write sample of how to use the CLI.
-```
-
 # Design
 ## Motivation
 
@@ -48,6 +37,24 @@ REST API if it becomes necessary. For more information see [EDM DocFinity Servic
 - Do NOT expose a class abstraction to public surface.
 - Main logic should be 100% re-usable if we decide to build a REST API.
 - All errors (validation, request, etc) should be transmitted by exceptions and logging.
+
+## Explanation of Indexing Steps
+
+1. Get DocumentTypeId
+    - Since user is not expected to know the internal identifier for the DocumentType, given a document type name and category name, retrieve the DocumentTypeId.
+    - Validate that document type exists.
+2. Get Metadata Definitions
+    - Since user is not expected to know the internal identifiers for metadata objects, using the DocumentTypeId retrieve the Metadata Object information for the DocumentType.
+    - Validate that the metadata names from user exist for the document type.
+3. Upload Document
+    - Retrieves the DocumentId for the new document.
+4. Execute DataSources
+    - Use the `/indexing/controls` end point to send the metadata values from user (which can be a partial set) and have DocFinity execute all valid datasources and return full set of metadata values.
+    - Validate that all required fields have values and check for data source errors.
+5. Index and Commit
+    - Using the response from the previous step, send a request to `/indexing/index/commit` to index and commit the new document.
+6. Delete Document on Error
+    - If there is an error at any point after uploading the document, delete it.
 
 # Setup for Development
 
@@ -69,17 +76,25 @@ Setup your IDE to use the formatter:
 - Set it to run `./gradlew spotlessApply` on save to automatically fix formatting.
 - If you use VSCode, install the [Spotless Gradle Extension](https://marketplace.visualstudio.com/items?itemName=richardwillis.vscode-spotless-gradle) that can automatically apply these settings.
 
+## Debug against a live server
+
+Configure your IDE to launch the `docfinity-client-cli/src/main/java/edu/uw/edm/docfinity/cli/DocFinityClientCLI.java` class and setup the following startup arguments:
+
+- -u: DocFinity base url.
+- -k: DocFinity API Key.
+- -f: Path to file to upload or "test" to use a sample file.
+- -c: Category name to index document.
+- -d: Document type name to index document.
+- -j: Metadata to index as json string, ie. `"{ \"FieldName\": \"FieldValue\"}"`
+- --trace: Turns on request tracing
+
 ## Run CLI with Gradle
 
-You can also use the CLI with arguments from gradle (instead of running from the .jar file) by using the gradle task `run --args="<ARGS>"`. For example, to get documentation of command line options run:
+You can also use the CLI with arguments from gradle (instead of running from the .jar file) by using the gradle task `run --args="<ARGS>"` with the same arguments as described in the previous section. For example, to get documentation of command line options run:
 
 ```
 ./gradlew run --args="--help"
 ```
-
-## Debug against a live server
-
-TODO: Add documentation of how to quickly debug library against live responses.
 
 # Integration Tests
 

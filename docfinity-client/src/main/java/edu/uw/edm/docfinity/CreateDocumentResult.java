@@ -7,5 +7,6 @@ import lombok.RequiredArgsConstructor;
 @Data
 @RequiredArgsConstructor
 public class CreateDocumentResult {
-    private final String documentTypeId;
+    /** Identifier of the document that was created. */
+    private final String documentId;
 }
