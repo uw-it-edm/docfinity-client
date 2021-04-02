@@ -1,6 +1,7 @@
 package edu.uw.edm.docfinity;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Multimap;
 import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
 import edu.uw.edm.docfinity.models.DocumentIndexingMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentTypeMetadataDTO;
@@ -18,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 public class DocFinityDtoMapper {
     private final String documentTypeId;
     private final String documentId;
-    private final Map<String, Object> clientMetadata;
+    private final Multimap<String, Object> clientMetadata;
 
     /**
     * Builds the data to execute a '/indexing/controls' request from the given metadata object
@@ -34,11 +35,11 @@ public class DocFinityDtoMapper {
                         .collect(Collectors.toMap(DocumentTypeMetadataDTO::getMetadataName, m -> m));
 
         List<DocumentIndexingMetadataDTO> controlsRequest =
-                clientMetadata.entrySet().stream()
+                clientMetadata.entries().stream()
                         .map(
-                                m -> {
-                                    String metadataId = metadataDefinitionsByName.get(m.getKey()).getMetadataId();
-                                    return new DocumentIndexingMetadataDTO(metadataId, m.getValue());
+                                entry -> {
+                                    String metadataId = metadataDefinitionsByName.get(entry.getKey()).getMetadataId();
+                                    return new DocumentIndexingMetadataDTO(metadataId, entry.getValue());
                                 })
                         .collect(Collectors.toList());
 

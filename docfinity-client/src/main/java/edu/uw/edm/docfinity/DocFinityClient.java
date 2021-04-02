@@ -1,6 +1,7 @@
 package edu.uw.edm.docfinity;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Multimap;
 import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
 import edu.uw.edm.docfinity.models.DocumentTypeDTOSearchResult;
 import edu.uw.edm.docfinity.models.DocumentTypeMetadataDTO;
@@ -9,7 +10,6 @@ import edu.uw.edm.docfinity.models.ParameterPromptDTO2;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -48,6 +48,45 @@ public class DocFinityClient {
     }
 
     /**
+    * @param args
+    * @return
+    * @throws IOException
+    */
+    public CreateDocumentResult createDocument(CreateDocumentArgs args) throws IOException {
+        Preconditions.checkNotNull(args, "args is required.");
+        args.validate();
+
+        // 1. Get the document type id from the category and document names.
+        String documentTypeId = getDocumentTypeId(args.getCategoryName(), args.getDocumentTypeName());
+        log.info("Retrieved document type id: {}", documentTypeId);
+
+        // 2. Get the metadata objects from the document type id.
+        List<DocumentTypeMetadataDTO> metadataDefinitions = getMetadataDefinitions(documentTypeId);
+
+        // 3. Upload file.
+        String documentId = this.service.uploadDocument(args.getFile());
+        log.info("File uploaded, document id: {}", documentId);
+
+        // 4. Get control prompts that executes data sources from the partial client metadata.
+        DocFinityDtoMapper dtoMapper =
+                new DocFinityDtoMapper(documentTypeId, documentId, args.getMetadata());
+
+        EntryControlWrapperDTO controlsRequest =
+                dtoMapper.buildControlDtoFromMetadata(metadataDefinitions);
+        List<ParameterPromptDTO2> controlsResponse = this.service.getIndexingControls(controlsRequest);
+
+        // 5. Index and commit the document using the calculated values from prompts.
+        DocumentIndexingDTO indexRequest =
+                dtoMapper.buildIndexingDtoFromControlPromptDtos(controlsResponse);
+        this.service.indexDocuments(indexRequest);
+
+        // TODO: 6. Delete file if indexing fails
+
+        // Build result to return to client.
+        return new CreateDocumentResult(documentId);
+    }
+
+    /**
     * Uploads and indexes a document to DocFinity.
     *
     * @param file File to upload.
@@ -56,7 +95,7 @@ public class DocFinityClient {
     * @param metadata Map of metadata object names with their value to use when indexing.
     */
     public CreateDocumentResult createDocument(
-            File file, String categoryName, String documentTypeName, Map<String, Object> metadata)
+            File file, String categoryName, String documentTypeName, Multimap<String, Object> metadata)
             throws IOException {
 
         Preconditions.checkNotNull(file, "file is required.");
