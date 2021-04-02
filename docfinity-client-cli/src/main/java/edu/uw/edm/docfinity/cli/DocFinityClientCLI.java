@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import edu.uw.edm.docfinity.CreateDocumentResult;
 import edu.uw.edm.docfinity.DocFinityClient;
+import edu.uw.edm.docfinity.DocFinityServiceImpl;
 import java.io.File;
 import java.net.URL;
 import java.util.HashMap;
@@ -81,7 +82,8 @@ public class DocFinityClientCLI {
         if (!cli.trace) {
             // A console appender is defined in 'docfinity-client-cli/src/main/resources/logback.xml', if
             // user did not enable tracing need to detach it.
-            Logger clientLogger = (Logger) LoggerFactory.getLogger("edu.uw.edm.docfinity");
+            String serviceImplTypeName = DocFinityServiceImpl.class.getCanonicalName();
+            Logger clientLogger = (Logger) LoggerFactory.getLogger(serviceImplTypeName);
             clientLogger.detachAppender("Console");
         }
 

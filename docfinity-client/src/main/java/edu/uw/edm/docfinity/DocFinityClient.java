@@ -10,7 +10,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 /** Abstracts the create and update operations for DocFinity documents. */
 public class DocFinityClient {
     private final DocFinityService service;
@@ -65,12 +67,14 @@ public class DocFinityClient {
 
         // 1. Get the document type id from the category and document names.
         String documentTypeId = getDocumentTypeId(categoryName, documentTypeName);
+        log.info("Retrieved document type id: {}", documentTypeId);
 
         // 2. Get the metadata objects from the document type id.
         List<DocumentTypeMetadataDTO> metadataDefinitions = getMetadataDefinitions(documentTypeId);
 
         // 3. Upload file.
         String documentId = this.service.uploadDocument(file);
+        log.info("File uploaded, document id: {}", documentId);
 
         // 4. Get control prompts that executes data sources from the partial client metadata.
         DocFinityDtoMapper dtoMapper = new DocFinityDtoMapper(documentTypeId, documentId, metadata);
