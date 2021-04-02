@@ -7,6 +7,7 @@ import edu.uw.edm.docfinity.models.DocumentIndexingMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentTypeMetadataDTO;
 import edu.uw.edm.docfinity.models.EntryControlWrapperDTO;
 import edu.uw.edm.docfinity.models.ParameterPromptDTO2;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -54,11 +55,17 @@ public class DocFinityDtoMapper {
             List<ParameterPromptDTO2> controlPrompts) {
         Preconditions.checkNotNull(controlPrompts, "controlPrompts is required.");
 
-        // TODO: Add validation and checks.
-        List<DocumentIndexingMetadataDTO> indexMetadatas =
-                controlPrompts.stream()
-                        .map(c -> new DocumentIndexingMetadataDTO(c.getId(), c.getStrDefaultValue()))
-                        .collect(Collectors.toList());
+        List<DocumentIndexingMetadataDTO> indexMetadatas = new ArrayList<>();
+
+        for (ParameterPromptDTO2 prompt : controlPrompts) {
+            Object[] values = prompt.getStrDefaultValue();
+
+            if (values != null) {
+                for (Object value : values) {
+                    indexMetadatas.add(new DocumentIndexingMetadataDTO(prompt.getId(), value));
+                }
+            }
+        }
 
         return new DocumentIndexingDTO(documentTypeId, documentId, indexMetadatas);
     }

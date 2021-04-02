@@ -13,19 +13,20 @@ import edu.uw.edm.docfinity.models.ParameterPromptDTO2;
 import java.io.File;
 import java.net.URL;
 import java.util.Arrays;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 public class DocFinityClientTest {
-    private static DocFinityService mockService;
     private static final String testDocumentTypeId = "documentType123";
     private static final String testDocumentId = "document123";
     private static final URL resource =
             DocFinityClientTest.class.getClassLoader().getResource("test-file.txt");
-    private static File testFile;
 
-    @BeforeClass
-    public static void setupDependencies() throws Exception {
+    private File testFile;
+    private DocFinityService mockService;
+
+    @Before
+    public void setupDependencies() throws Exception {
         testFile = new File(resource.toURI());
         mockService = mock(DocFinityService.class);
 
@@ -34,17 +35,17 @@ public class DocFinityClientTest {
                 .thenReturn(DocumentTypeDTOSearchResult.from(testDocumentTypeId));
     }
 
-    private void setupDocumentTypeMetadataCall(DocumentTypeMetadataDTO... expectedMetadata)
+    private void setupDocumentTypeMetadataReturns(DocumentTypeMetadataDTO... expectedMetadata)
             throws Exception {
         when(mockService.getDocumentTypeMetadata(testDocumentTypeId))
                 .thenReturn(Arrays.asList(expectedMetadata));
     }
 
-    private void setupIndexingControlsCall(ParameterPromptDTO2... indexMetadata) throws Exception {
+    private void setupIndexingControlsReturns(ParameterPromptDTO2... indexMetadata) throws Exception {
         when(mockService.getIndexingControls(any())).thenReturn(Arrays.asList(indexMetadata));
     }
 
-    private void verifyIndexingControlsCall(DocumentIndexingMetadataDTO... expectedMetadata)
+    private void verifyIndexingControlsArg(DocumentIndexingMetadataDTO... expectedMetadata)
             throws Exception {
         EntryControlWrapperDTO expectedControlDTO =
                 new EntryControlWrapperDTO(
@@ -53,7 +54,7 @@ public class DocFinityClientTest {
         verify(mockService).getIndexingControls(expectedControlDTO);
     }
 
-    private void verifyIndexDocumentsCall(DocumentIndexingMetadataDTO... documentIndexingMetadata)
+    private void verifyIndexDocumentsArg(DocumentIndexingMetadataDTO... documentIndexingMetadata)
             throws Exception {
         DocumentIndexingDTO expected =
                 new DocumentIndexingDTO(
@@ -69,8 +70,8 @@ public class DocFinityClientTest {
     public void shouldCreateDocumentWithOneField() throws Exception {
         // arrange
         DocFinityClient client = new DocFinityClient(mockService);
-        setupDocumentTypeMetadataCall(new DocumentTypeMetadataDTO("123", "Test Field"));
-        setupIndexingControlsCall(new ParameterPromptDTO2("123", "Test Field", "DataSource Value"));
+        setupDocumentTypeMetadataReturns(new DocumentTypeMetadataDTO("123", "Test Field"));
+        setupIndexingControlsReturns(new ParameterPromptDTO2("123", "Test Field", "DataSource Value"));
 
         // act
         CreateDocumentArgs args =
@@ -80,7 +81,7 @@ public class DocFinityClientTest {
 
         // assert
         assertEquals(testDocumentId, result.getDocumentId());
-        verifyIndexingControlsCall(new DocumentIndexingMetadataDTO("123", "User Value"));
-        verifyIndexDocumentsCall(new DocumentIndexingMetadataDTO("123", "DataSource Value"));
+        verifyIndexingControlsArg(new DocumentIndexingMetadataDTO("123", "User Value"));
+        verifyIndexDocumentsArg(new DocumentIndexingMetadataDTO("123", "DataSource Value"));
     }
 }

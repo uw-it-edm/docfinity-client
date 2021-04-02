@@ -1,5 +1,6 @@
 package edu.uw.edm.docfinity.models;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,5 +15,16 @@ import lombok.RequiredArgsConstructor;
 public class ParameterPromptDTO2 {
     private @NonNull String id;
     private @NonNull String name;
-    private @NonNull Object strDefaultValue;
+
+    @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+    private Object[] strDefaultValue;
+
+    public ParameterPromptDTO2(String id, String name, Object value) {
+        this.id = id;
+        this.name = name;
+
+        if (value != null) {
+            this.strDefaultValue = new Object[] {value};
+        }
+    }
 }
