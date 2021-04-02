@@ -14,11 +14,11 @@
         By default a console tracer is added for the whole package and removed if CLI is run with tracing disabled.
         This is because adding a trace appender programmatically does not appear to be supported by logback.
     -->
-    <logger name="edu.uw.edm.docfinity" level="trace">
+    <logger name="edu.uw.edm.docfinity.DocFinityServiceImpl" level="trace" additivity="false">
       <appender-ref ref="Console"/>
     </logger>
 
-    <logger name="edu.uw.edm.docfinity.cli" level="info" additivity="false">
+    <logger name="edu.uw.edm.docfinity" level="info">
       <appender-ref ref="Console"/>
     </logger>
 </configuration>
