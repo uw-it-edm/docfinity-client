@@ -1,0 +1,24 @@
+<configuration>
+    <!-- NopStatusListener is added so that console does not print all the logback startup when running CLI. -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>
+                %d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n
+            </Pattern>
+        </layout>
+    </appender>
+
+    <!--
+        By default a console tracer is added for the whole package and removed if CLI is run with tracing disabled.
+        This is because adding a trace appender programmatically does not appear to be supported by logback.
+    -->
+    <logger name="edu.uw.edm.docfinity" level="trace">
+      <appender-ref ref="Console"/>
+    </logger>
+
+    <logger name="edu.uw.edm.docfinity.cli" level="info" additivity="false">
+      <appender-ref ref="Console"/>
+    </logger>
+</configuration>

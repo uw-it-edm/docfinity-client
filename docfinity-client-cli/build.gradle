@@ -4,10 +4,11 @@ jar {
 
 dependencies {
     compile project(":docfinity-client")
+    compile "com.beust:jcommander:1.71"
 }
 
 apply plugin: "application"
 
 application {
-    mainClass = "edu.uw.edm.docfinity.DocFinityClientCLI"
+    mainClass = "edu.uw.edm.docfinity.cli.DocFinityClientCLI"
 }

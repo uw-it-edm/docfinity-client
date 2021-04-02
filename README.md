@@ -69,19 +69,17 @@ Setup your IDE to use the formatter:
 - Set it to run `./gradlew spotlessApply` on save to automatically fix formatting.
 - If you use VSCode, install the [Spotless Gradle Extension](https://marketplace.visualstudio.com/items?itemName=richardwillis.vscode-spotless-gradle) that can automatically apply these settings.
 
+## Run CLI with Gradle
+
+You can also use the CLI with arguments from gradle (instead of running from the .jar file) by using the gradle task `run --args="<ARGS>"`. For example, to get documentation of command line options run:
+
+```
+./gradlew run --args="--help"
+```
+
 ## Debug against a live server
 
 TODO: Add documentation of how to quickly debug library against live responses.
-
-## Run CLI with Gradle
-
-You can also use the CLI with arguments from gradle (instead of running from the .jar file):
-
-```
-TODO: Document usage with arguments once the CLI is done.
-
-./gradlew run --args="<cli-args-here>"
-```
 
 # Integration Tests
 
