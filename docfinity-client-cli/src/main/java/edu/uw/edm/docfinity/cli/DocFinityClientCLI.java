@@ -3,16 +3,17 @@ package edu.uw.edm.docfinity.cli;
 import ch.qos.logback.classic.Logger;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
+import edu.uw.edm.docfinity.CreateDocumentArgs;
 import edu.uw.edm.docfinity.CreateDocumentResult;
 import edu.uw.edm.docfinity.DocFinityClient;
+import edu.uw.edm.docfinity.DocFinityDocumentField;
 import edu.uw.edm.docfinity.DocFinityServiceImpl;
 import java.io.File;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Arrays;
+import java.util.List;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -52,8 +53,8 @@ public class DocFinityClientCLI {
     // TODO: Add a parameter to read metadata from file.
     @Parameter(
             names = {"--metadataJson", "-j"},
-            description = "Json object with metadata values to index the file.")
-    String metadataJson = "{}";
+            description = "Json array with metadata values to index the file.")
+    String metadataJson = "[]";
 
     @Parameter(names = "--trace", description = "Enable request tracing to console.")
     boolean trace;
@@ -96,17 +97,17 @@ public class DocFinityClientCLI {
             file = new File(resource.toURI());
         }
 
-        // Load metadata dictionary
+        // Load metadata from json
         ObjectMapper mapper = new ObjectMapper();
-        TypeReference<HashMap<String, Object>> typeRef =
-                new TypeReference<HashMap<String, Object>>() {};
-        Map<String, Object> metadata = mapper.readValue(cli.metadataJson, typeRef);
+        List<DocFinityDocumentField> metadata =
+                Arrays.asList(mapper.readValue(cli.metadataJson, DocFinityDocumentField[].class));
 
         // Run the client.
         cliLogger.info("Starting");
         DocFinityClient client = new DocFinityClient(cli.url, cli.apiKey, cli.auditUser);
-        CreateDocumentResult result =
-                client.createDocument(file, cli.category, cli.documentType, metadata);
+        CreateDocumentArgs args =
+                new CreateDocumentArgs(file, cli.category, cli.documentType).withMetadata(metadata);
+        CreateDocumentResult result = client.createDocument(args);
         cliLogger.info("Result: {}", result.getDocumentId());
     }
 }
