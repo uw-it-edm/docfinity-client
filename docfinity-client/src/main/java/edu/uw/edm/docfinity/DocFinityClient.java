@@ -1,8 +1,14 @@
 package edu.uw.edm.docfinity;
 
-import edu.uw.edm.docfinity.models.DocumentTypesResponse;
+import com.google.common.base.Preconditions;
+import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
+import edu.uw.edm.docfinity.models.DocumentTypeDTOSearchResult;
+import edu.uw.edm.docfinity.models.DocumentTypeMetadataDTO;
+import edu.uw.edm.docfinity.models.EntryControlWrapperDTO;
+import edu.uw.edm.docfinity.models.ParameterPromptDTO2;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 /** Abstracts the create and update operations for DocFinity documents. */
@@ -46,14 +52,59 @@ public class DocFinityClient {
     * @param categoryName Category name to index document.
     * @param documentTypeName Document type name to index document.
     * @param metadata Map of metadata object names with their value to use when indexing.
-    * @throws IOException
     */
     public CreateDocumentResult createDocument(
             File file, String categoryName, String documentTypeName, Map<String, Object> metadata)
             throws IOException {
-        DocumentTypesResponse documentTypes =
+
+        Preconditions.checkNotNull(file, "file is required.");
+        Preconditions.checkNotNull(categoryName, "categoryName is required.");
+        Preconditions.checkNotNull(documentTypeName, "documentTypeName is required.");
+        Preconditions.checkNotNull(metadata, "metadata is required.");
+        Preconditions.checkArgument(file.exists(), "file must exist.");
+
+        // 1. Get the document type id from the category and document names.
+        String documentTypeId = getDocumentTypeId(categoryName, documentTypeName);
+
+        // 2. Get the metadata objects from the document type id.
+        List<DocumentTypeMetadataDTO> metadataDefinitions = getMetadataDefinitions(documentTypeId);
+
+        // 3. Upload file.
+        String documentId = this.service.uploadDocument(file);
+
+        // 4. Get control prompts that executes data sources from the partial client metadata.
+        DocFinityDtoMapper dtoMapper = new DocFinityDtoMapper(documentTypeId, documentId, metadata);
+
+        EntryControlWrapperDTO controlsRequest =
+                dtoMapper.buildControlDtoFromMetadata(metadataDefinitions);
+        List<ParameterPromptDTO2> controlsResponse = this.service.getIndexingControls(controlsRequest);
+
+        // 5. Index and commit the document using the calculated values from prompts.
+        DocumentIndexingDTO indexRequest =
+                dtoMapper.buildIndexingDtoFromControlPromptDtos(controlsResponse);
+        this.service.indexDocuments(indexRequest);
+
+        // TODO: 6. Delete file if indexing fails
+
+        // Build result to return to client.
+        return new CreateDocumentResult(documentId);
+    }
+
+    private List<DocumentTypeMetadataDTO> getMetadataDefinitions(String documentTypeId)
+            throws IOException {
+        List<DocumentTypeMetadataDTO> metadataDefinitions =
+                this.service.getDocumentTypeMetadata(documentTypeId);
+
+        // TODO: Error check and validate reponse.
+        return metadataDefinitions;
+    }
+
+    private String getDocumentTypeId(String categoryName, String documentTypeName)
+            throws IOException {
+        DocumentTypeDTOSearchResult documentTypes =
                 this.service.getDocumentTypes(categoryName, documentTypeName);
 
-        return new CreateDocumentResult(documentTypes.getResults().get(0).getId());
+        // TODO: Error check and validate response.
+        return documentTypes.getResults().get(0).getId();
     }
 }

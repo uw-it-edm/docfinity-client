@@ -9,17 +9,17 @@ import lombok.Data;
 /** Represents the response from '/webservices/rest/documentType' DocFinity REST API. */
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DocumentTypesResponse {
+public class DocumentTypeDTOSearchResult {
     private int totalAvailable;
-    private List<DocumentTypeResponse> results;
+    private List<DocumentTypeDTO> results;
 
     /** Helper method used by unit tests to simplify the creation of types. */
-    public static DocumentTypesResponse from(String... documentTypeIds) {
-        DocumentTypesResponse response = new DocumentTypesResponse();
+    public static DocumentTypeDTOSearchResult from(String... documentTypeIds) {
+        DocumentTypeDTOSearchResult response = new DocumentTypeDTOSearchResult();
         response.setTotalAvailable(documentTypeIds.length);
-        List<DocumentTypeResponse> results =
+        List<DocumentTypeDTO> results =
                 Arrays.stream(documentTypeIds)
-                        .map(id -> new DocumentTypeResponse(id))
+                        .map(id -> new DocumentTypeDTO(id))
                         .collect(Collectors.toList());
 
         response.setResults(results);

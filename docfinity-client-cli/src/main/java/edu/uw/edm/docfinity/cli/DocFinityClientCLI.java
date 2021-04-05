@@ -3,9 +3,15 @@ package edu.uw.edm.docfinity.cli;
 import ch.qos.logback.classic.Logger;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
 import edu.uw.edm.docfinity.CreateDocumentResult;
 import edu.uw.edm.docfinity.DocFinityClient;
-import java.io.IOException;
+import java.io.File;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -36,6 +42,18 @@ public class DocFinityClientCLI {
             description = "Name of document type to use when creating a new document.")
     String documentType;
 
+    @Parameter(
+            names = {"--file", "-f"},
+            required = true,
+            description = "Path of file to upload, or 'test' to upload a sample file")
+    String filePath;
+
+    // TODO: Add a parameter to read metadata from file.
+    @Parameter(
+            names = {"--metadataJson", "-j"},
+            description = "Json object with metadata values to index the file.")
+    String metadataJson = "{}";
+
     @Parameter(names = "--trace", description = "Enable request tracing to console.")
     boolean trace;
 
@@ -47,7 +65,7 @@ public class DocFinityClientCLI {
     @Parameter(names = "--help", help = true)
     private boolean help = false;
 
-    public static void main(String... argv) throws IOException {
+    public static void main(String... argv) throws Exception {
         Logger cliLogger = (Logger) LoggerFactory.getLogger(DocFinityClientCLI.class);
 
         DocFinityClientCLI cli = new DocFinityClientCLI();
@@ -67,9 +85,26 @@ public class DocFinityClientCLI {
             clientLogger.detachAppender("Console");
         }
 
+        // Load the file to upload.
+        Preconditions.checkNotNull(cli.filePath, "file is required.");
+        File file = new File(cli.filePath);
+
+        if (cli.filePath.equals("test")) {
+            URL resource = DocFinityClientCLI.class.getClassLoader().getResource("test-file.pdf");
+            file = new File(resource.toURI());
+        }
+
+        // Load metadata dictionary
+        ObjectMapper mapper = new ObjectMapper();
+        TypeReference<HashMap<String, Object>> typeRef =
+                new TypeReference<HashMap<String, Object>>() {};
+        Map<String, Object> metadata = mapper.readValue(cli.metadataJson, typeRef);
+
+        // Run the client.
         cliLogger.info("Starting");
         DocFinityClient client = new DocFinityClient(cli.url, cli.apiKey, cli.auditUser);
-        CreateDocumentResult result = client.createDocument(null, cli.category, cli.documentType, null);
-        cliLogger.info("Result: {}", result.getDocumentTypeId());
+        CreateDocumentResult result =
+                client.createDocument(file, cli.category, cli.documentType, metadata);
+        cliLogger.info("Result: {}", result.getDocumentId());
     }
 }
