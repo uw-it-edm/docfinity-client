@@ -1,10 +1,10 @@
 package edu.uw.edm.docfinity;
 
+import edu.uw.edm.docfinity.models.DatasourceRunningDTO;
 import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
+import edu.uw.edm.docfinity.models.DocumentServerMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentTypeDTOSearchResult;
 import edu.uw.edm.docfinity.models.DocumentTypeMetadataDTO;
-import edu.uw.edm.docfinity.models.EntryControlWrapperDTO;
-import edu.uw.edm.docfinity.models.ParameterPromptDTO2;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -40,10 +40,9 @@ public interface DocFinityService {
     * Represents call to 'webservices/rest/indexing/controls' to retrieve values of all metadata
     * objects after running data sources for a given document.
     */
-    List<ParameterPromptDTO2> getIndexingControls(EntryControlWrapperDTO requestData)
+    List<DocumentServerMetadataDTO> runDatasources(DatasourceRunningDTO datasourceRunningDto)
             throws IOException;
 
     /** Represents call to 'webservices/rest/indexing/index/commit' to index and commit a document. */
-    List<DocumentIndexingDTO> indexDocuments(DocumentIndexingDTO... documentIndexingDTOs)
-            throws IOException;
+    List<DocumentIndexingDTO> indexDocuments(DocumentIndexingDTO... documents) throws IOException;
 }

@@ -7,12 +7,15 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
-/** Represents request data to 'webservices/rest/indexing/controls' DocFinity REST API. */
+/**
+* Represents the 'EntryControlWrapperDTO' request data to 'webservices/rest/indexing/controls'
+* DocFinity REST API.
+*/
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @RequiredArgsConstructor
 @NoArgsConstructor
-public class EntryControlWrapperDTO {
+public class DatasourceRunningDTO {
     private @NonNull String documentTypeId;
     private @NonNull String documentId;
     private @NonNull List<DocumentIndexingMetadataDTO> data;

@@ -2,11 +2,11 @@ package edu.uw.edm.docfinity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import edu.uw.edm.docfinity.models.DatasourceRunningDTO;
 import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
+import edu.uw.edm.docfinity.models.DocumentServerMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentTypeDTOSearchResult;
 import edu.uw.edm.docfinity.models.DocumentTypeMetadataDTO;
-import edu.uw.edm.docfinity.models.EntryControlWrapperDTO;
-import edu.uw.edm.docfinity.models.ParameterPromptDTO2;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -151,11 +151,11 @@ public class DocFinityServiceImpl implements DocFinityService {
     }
 
     @Override
-    public List<ParameterPromptDTO2> getIndexingControls(EntryControlWrapperDTO requestData)
+    public List<DocumentServerMetadataDTO> runDatasources(DatasourceRunningDTO datasourceRunningDto)
             throws IOException {
 
         ObjectMapper mapper = new ObjectMapper();
-        String requestJson = mapper.writeValueAsString(requestData);
+        String requestJson = mapper.writeValueAsString(datasourceRunningDto);
         HttpUrl requestUrl =
                 this.docFinityUrl
                         .newBuilder()
@@ -169,15 +169,16 @@ public class DocFinityServiceImpl implements DocFinityService {
                         .build();
 
         try (Response response = client.newCall(request).execute()) {
-            return Arrays.asList(mapper.readValue(response.body().string(), ParameterPromptDTO2[].class));
+            return Arrays.asList(
+                    mapper.readValue(response.body().string(), DocumentServerMetadataDTO[].class));
         }
     }
 
     @Override
-    public List<DocumentIndexingDTO> indexDocuments(DocumentIndexingDTO... documentIndexingDTOs)
+    public List<DocumentIndexingDTO> indexDocuments(DocumentIndexingDTO... documents)
             throws IOException {
         ObjectMapper mapper = new ObjectMapper();
-        String requestJson = mapper.writeValueAsString(documentIndexingDTOs);
+        String requestJson = mapper.writeValueAsString(documents);
         HttpUrl requestUrl =
                 this.docFinityUrl
                         .newBuilder()

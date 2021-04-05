@@ -1,11 +1,11 @@
 package edu.uw.edm.docfinity;
 
 import com.google.common.base.Preconditions;
+import edu.uw.edm.docfinity.models.DatasourceRunningDTO;
 import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
 import edu.uw.edm.docfinity.models.DocumentIndexingMetadataDTO;
+import edu.uw.edm.docfinity.models.DocumentServerMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentTypeMetadataDTO;
-import edu.uw.edm.docfinity.models.EntryControlWrapperDTO;
-import edu.uw.edm.docfinity.models.ParameterPromptDTO2;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -20,20 +20,17 @@ public class DocFinityDtoMapper {
     private final String documentId;
     private final Map<String, Object> clientMetadata;
 
-    /**
-    * Builds the data to execute a '/indexing/controls' request from the given metadata object
-    * definitions.
-    */
-    public EntryControlWrapperDTO buildControlDtoFromMetadata(
-            List<DocumentTypeMetadataDTO> metadataDefinitions) {
-        Preconditions.checkNotNull(metadataDefinitions, "metadataDefinitions is required.");
+    /** Builds the data to execute datasources from the given metadata object definitions. */
+    public DatasourceRunningDTO buildDatasourceDtoFromMetadata(
+            List<DocumentTypeMetadataDTO> metadataDtos) {
+        Preconditions.checkNotNull(metadataDtos, "metadataDtos is required.");
 
         // TODO: Add validation and checks.
         Map<String, DocumentTypeMetadataDTO> metadataDefinitionsByName =
-                metadataDefinitions.stream()
+                metadataDtos.stream()
                         .collect(Collectors.toMap(DocumentTypeMetadataDTO::getMetadataName, m -> m));
 
-        List<DocumentIndexingMetadataDTO> controlsRequest =
+        List<DocumentIndexingMetadataDTO> indexingMetadataDtos =
                 clientMetadata.entrySet().stream()
                         .map(
                                 m -> {
@@ -42,20 +39,20 @@ public class DocFinityDtoMapper {
                                 })
                         .collect(Collectors.toList());
 
-        return new EntryControlWrapperDTO(documentTypeId, documentId, controlsRequest);
+        return new DatasourceRunningDTO(documentTypeId, documentId, indexingMetadataDtos);
     }
 
     /**
-    * Builds the data to execute the '/indexing/index/commit' request from the given list of control
-    * prompts.
+    * Builds the data to execute the '/indexing/index/commit' request from the given list of server
+    * metadatga values.
     */
-    public DocumentIndexingDTO buildIndexingDtoFromControlPromptDtos(
-            List<ParameterPromptDTO2> controlPrompts) {
-        Preconditions.checkNotNull(controlPrompts, "controlPrompts is required.");
+    public DocumentIndexingDTO buildIndexingDtoFromServerMetadataDtos(
+            List<DocumentServerMetadataDTO> serverMetadataDtos) {
+        Preconditions.checkNotNull(serverMetadataDtos, "serverMetadataDtos is required.");
 
         // TODO: Add validation and checks.
         List<DocumentIndexingMetadataDTO> indexMetadatas =
-                controlPrompts.stream()
+                serverMetadataDtos.stream()
                         .map(c -> new DocumentIndexingMetadataDTO(c.getId(), c.getStrDefaultValue()))
                         .collect(Collectors.toList());
 

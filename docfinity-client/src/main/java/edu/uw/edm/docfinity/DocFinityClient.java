@@ -1,11 +1,11 @@
 package edu.uw.edm.docfinity;
 
 import com.google.common.base.Preconditions;
+import edu.uw.edm.docfinity.models.DatasourceRunningDTO;
 import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
+import edu.uw.edm.docfinity.models.DocumentServerMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentTypeDTOSearchResult;
 import edu.uw.edm.docfinity.models.DocumentTypeMetadataDTO;
-import edu.uw.edm.docfinity.models.EntryControlWrapperDTO;
-import edu.uw.edm.docfinity.models.ParameterPromptDTO2;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -70,22 +70,21 @@ public class DocFinityClient {
         log.info("Retrieved document type id: {}", documentTypeId);
 
         // 2. Get the metadata objects from the document type id.
-        List<DocumentTypeMetadataDTO> metadataDefinitions = getMetadataDefinitions(documentTypeId);
+        List<DocumentTypeMetadataDTO> metadataDtos = getMetadataDefinitions(documentTypeId);
 
         // 3. Upload file.
         String documentId = this.service.uploadDocument(file);
         log.info("File uploaded, document id: {}", documentId);
 
-        // 4. Get control prompts that executes data sources from the partial client metadata.
+        // 4. Execute data sources from the partial client metadata and retrieve full server metadata.
         DocFinityDtoMapper dtoMapper = new DocFinityDtoMapper(documentTypeId, documentId, metadata);
 
-        EntryControlWrapperDTO controlsRequest =
-                dtoMapper.buildControlDtoFromMetadata(metadataDefinitions);
-        List<ParameterPromptDTO2> controlsResponse = this.service.getIndexingControls(controlsRequest);
+        DatasourceRunningDTO datasourceDto = dtoMapper.buildDatasourceDtoFromMetadata(metadataDtos);
+        List<DocumentServerMetadataDTO> serverMetadataDtos = this.service.runDatasources(datasourceDto);
 
-        // 5. Index and commit the document using the calculated values from prompts.
+        // 5. Index and commit the document using the calculated values from datasources.
         DocumentIndexingDTO indexRequest =
-                dtoMapper.buildIndexingDtoFromControlPromptDtos(controlsResponse);
+                dtoMapper.buildIndexingDtoFromServerMetadataDtos(serverMetadataDtos);
         this.service.indexDocuments(indexRequest);
 
         // TODO: 6. Delete file if indexing fails
