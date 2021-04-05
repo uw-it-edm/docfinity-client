@@ -4,12 +4,14 @@
 # Ignore folders
 build/
 .vscode/
+.idea/
 .settings/
 bin/
 
 # Ignore files
 .project
 .classpath
+*.iml
 
 # This is excluded to avoid issue with gradle-gitflow
 #   gradle-gitflow uses grgit to detect the version. When gradle builds it will update gradlew.bat in a way that is 
