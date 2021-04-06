@@ -1,6 +1,9 @@
 package edu.uw.edm.docfinity;
 
-import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableMap;
@@ -11,21 +14,23 @@ import edu.uw.edm.docfinity.models.DocumentServerMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentTypeDTOSearchResult;
 import edu.uw.edm.docfinity.models.DocumentTypeMetadataDTO;
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 public class DocFinityClientTest {
-    private static DocFinityService mockService;
     private static final String testDocumentTypeId = "documentType123";
     private static final String testDocumentId = "document123";
     private static final URL resource =
             DocFinityClientTest.class.getClassLoader().getResource("test-file.txt");
-    private static File testFile;
 
-    @BeforeClass
-    public static void setupDependencies() throws Exception {
+    private File testFile;
+    private DocFinityService mockService;
+
+    @Before
+    public void setupDependencies() throws Exception {
         testFile = new File(resource.toURI());
         mockService = mock(DocFinityService.class);
 
@@ -82,7 +87,77 @@ public class DocFinityClientTest {
 
         // assert
         assertEquals(testDocumentId, result.getDocumentId());
-        verifyRunDatasourcesArg(new DocumentIndexingMetadataDTO("123", "User Value"));
-        verifyIndexDocumentsArg(new DocumentIndexingMetadataDTO("123", "DataSource Value"));
+        verifyRunDatasourcesArg(new DocumentIndexingMetadataDTO("123", "Test Field", "User Value"));
+        verifyIndexDocumentsArg(
+                new DocumentIndexingMetadataDTO("123", "Test Field", "DataSource Value"));
+    }
+
+    @Test
+    public void shouldThrowErrorIfDocumentTypeDoesNotExist() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        when(mockService.getDocumentTypes(any(), any())).thenReturn(new DocumentTypeDTOSearchResult());
+
+        // act
+        CreateDocumentArgs args = new CreateDocumentArgs(testFile, "testCategory", "testDocumentType");
+
+        IllegalStateException thrown =
+                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
+
+        // assert
+        assertEquals(
+                "Document type with category 'testCategory' and name 'testDocumentType' does not exist in server.",
+                thrown.getMessage());
+    }
+
+    @Test
+    public void shouldThrowErrorIfMultipleDocumentTypesMatchFilter() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        when(mockService.getDocumentTypes(any(), any()))
+                .thenReturn(DocumentTypeDTOSearchResult.from("DocTypeId-1", "DocTypeId-2"));
+
+        // act
+        CreateDocumentArgs args = new CreateDocumentArgs(testFile, "testCategory", "testDocumentType");
+        IllegalStateException thrown =
+                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
+
+        // assert
+        assertEquals(
+                "Multiple document types with category 'testCategory' and name 'testDocumentType' found in server.",
+                thrown.getMessage());
+    }
+
+    @Test
+    public void shouldNotUploadDocumentIfUserMetadataValidationFails() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        setupDocumentTypeMetadataReturn(new DocumentTypeMetadataDTO("111", "Field1", true));
+
+        // act
+        CreateDocumentArgs args =
+                new CreateDocumentArgs(testFile, "category", "documentType")
+                        .withMetadata(ImmutableMap.of("Field2", "User Value"));
+        assertThrows(IllegalStateException.class, () -> client.createDocument(args));
+
+        // assert
+        verify(mockService, never()).uploadDocument(any());
+    }
+
+    @Test
+    public void shouldDeleteDocumentIfErrorIsThrownAfterUpload() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        setupDocumentTypeMetadataReturn(new DocumentTypeMetadataDTO("111", "Field1"));
+        when(mockService.runDatasources(any())).thenThrow(new IOException("Test Error"));
+
+        // act
+        CreateDocumentArgs args =
+                new CreateDocumentArgs(testFile, "category", "documentType")
+                        .withMetadata(ImmutableMap.of("Field1", "User Value"));
+        assertThrows(Exception.class, () -> client.createDocument(args));
+
+        // assert
+        verify(mockService).deleteDocuments(testDocumentId);
     }
 }

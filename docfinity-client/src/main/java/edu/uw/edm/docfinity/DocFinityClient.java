@@ -3,11 +3,14 @@ package edu.uw.edm.docfinity;
 import com.google.common.base.Preconditions;
 import edu.uw.edm.docfinity.models.DatasourceRunningDTO;
 import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
+import edu.uw.edm.docfinity.models.DocumentIndexingMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentServerMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentTypeDTOSearchResult;
 import edu.uw.edm.docfinity.models.DocumentTypeMetadataDTO;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -54,42 +57,59 @@ public class DocFinityClient {
         Preconditions.checkNotNull(args, "args is required.");
         args.validate();
 
+        DocFinityDtoMapper mapper = new DocFinityDtoMapper(args);
+
         // 1. Get the document type id from the category and document names.
         String documentTypeId = getDocumentTypeId(args.getCategoryName(), args.getDocumentTypeName());
         log.info("Retrieved document type id: {}", documentTypeId);
 
-        // 2. Get the metadata objects from the document type id.
-        List<DocumentTypeMetadataDTO> metadataDtos = getMetadataDefinitions(documentTypeId);
+        // 2. Get the metadata objects from the document type id and validate inputs.
+        Map<String, DocumentTypeMetadataDTO> metadata = getDocumentTypeMetadata(documentTypeId, args);
+        List<DocumentIndexingMetadataDTO> partialDtos = mapper.getPartialIndexingDtos(metadata);
 
         // 3. Upload file.
         String documentId = this.service.uploadDocument(args.getFile());
         log.info("File uploaded, document id: {}", documentId);
 
-        // 4. Execute data sources from the partial client metadata and retrieve full server metadata.
-        DocFinityDtoMapper dtoMapper =
-                new DocFinityDtoMapper(documentTypeId, documentId, args.getMetadata());
+        try {
+            // 4. Execute data sources from the partial client metadata and retrieve full server metadata.
+            List<DocumentServerMetadataDTO> serverDtos =
+                    this.service.runDatasources(
+                            new DatasourceRunningDTO(documentTypeId, documentId, partialDtos));
 
-        DatasourceRunningDTO datasourceDto = dtoMapper.buildDatasourceDtoFromMetadata(metadataDtos);
-        List<DocumentServerMetadataDTO> serverMetadataDtos = this.service.runDatasources(datasourceDto);
+            // 5. Index and commit the document using the calculated values from datasources.
+            List<DocumentIndexingMetadataDTO> finalDtos =
+                    mapper.getFinalIndexingDtos(metadata, serverDtos);
+            this.service.indexDocuments(new DocumentIndexingDTO(documentTypeId, documentId, finalDtos));
 
-        // 5. Index and commit the document using the calculated values from datasources.
-        DocumentIndexingDTO indexRequest =
-                dtoMapper.buildIndexingDtoFromServerMetadataDtos(serverMetadataDtos);
-        this.service.indexDocuments(indexRequest);
-
-        // TODO: 6. Delete file if indexing fails
+        } catch (Exception e) {
+            // 6. If there is an error after the file has been upload it, need to delete it from server.
+            this.tryDeleteDocument(documentId);
+            throw e;
+        }
 
         // Build result to return to client.
         return new CreateDocumentResult(documentId);
     }
 
-    private List<DocumentTypeMetadataDTO> getMetadataDefinitions(String documentTypeId)
-            throws IOException {
-        List<DocumentTypeMetadataDTO> metadataDefinitions =
-                this.service.getDocumentTypeMetadata(documentTypeId);
+    private void tryDeleteDocument(String documentId) {
+        try {
+            this.service.deleteDocuments(documentId);
+            log.info("Document deleted due to indexing error, id: {}", documentId);
+        } catch (IOException e) {
+            log.error("Failed to delete document '%s'. Error Message: ", documentId, e.getMessage());
+        }
+    }
 
-        // TODO: Error check and validate reponse.
-        return metadataDefinitions;
+    private Map<String, DocumentTypeMetadataDTO> getDocumentTypeMetadata(
+            String documentTypeId, CreateDocumentArgs args) throws IOException {
+
+        List<DocumentTypeMetadataDTO> metadata = this.service.getDocumentTypeMetadata(documentTypeId);
+
+        Preconditions.checkNotNull(metadata, "getDocumentTypeMetadata() result is null.");
+
+        return metadata.stream()
+                .collect(Collectors.toMap(DocumentTypeMetadataDTO::getMetadataName, m -> m));
     }
 
     private String getDocumentTypeId(String categoryName, String documentTypeName)
@@ -97,7 +117,21 @@ public class DocFinityClient {
         DocumentTypeDTOSearchResult documentTypes =
                 this.service.getDocumentTypes(categoryName, documentTypeName);
 
-        // TODO: Error check and validate response.
-        return documentTypes.getResults().get(0).getId();
+        Preconditions.checkNotNull(documentTypes, "getDocumentTypes() result is null.");
+        int count = documentTypes.getTotalAvailable();
+
+        if (count == 1) {
+            return documentTypes.getResults().get(0).getId();
+        } else if (count > 1) {
+            throw new IllegalStateException(
+                    String.format(
+                            "Multiple document types with category '%s' and name '%s' found in server.",
+                            categoryName, documentTypeName));
+        } else {
+            throw new IllegalStateException(
+                    String.format(
+                            "Document type with category '%s' and name '%s' does not exist in server.",
+                            categoryName, documentTypeName));
+        }
     }
 }
