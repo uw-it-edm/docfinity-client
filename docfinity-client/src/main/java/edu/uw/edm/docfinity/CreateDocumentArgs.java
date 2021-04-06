@@ -54,7 +54,8 @@ public class CreateDocumentArgs {
         CreateDocumentArgs cloned = this.newCopy();
         cloned.metadata.clear();
 
-        metadataList.stream().forEach(field -> cloned.metadata.put(field.getName(), field.getValue()));
+        metadataList.stream()
+                .forEach(field -> cloned.metadata.put(field.getMetadataName(), field.getValue()));
         return cloned;
     }
 

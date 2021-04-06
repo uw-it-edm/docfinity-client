@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DocFinityDocumentField {
     /** The name of the document field to index. */
-    private String name;
+    private String metadataName;
 
     /** The value of the document field to index. */
     private Object value;

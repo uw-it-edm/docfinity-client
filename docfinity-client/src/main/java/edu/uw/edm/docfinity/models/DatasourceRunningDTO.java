@@ -1,6 +1,7 @@
 package edu.uw.edm.docfinity.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,7 +19,10 @@ import lombok.RequiredArgsConstructor;
 public class DatasourceRunningDTO {
     private @NonNull String documentTypeId;
     private @NonNull String documentId;
-    private @NonNull List<DocumentIndexingMetadataDTO> data;
+
+    @JsonProperty("data")
+    private @NonNull List<DocumentIndexingMetadataDTO> metadata;
+
     private boolean reindexFlag;
     private boolean clearMetadata;
 }

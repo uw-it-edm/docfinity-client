@@ -196,6 +196,22 @@ public class DocFinityServiceImpl implements DocFinityService {
         }
     }
 
+    @Override
+    public void deleteDocuments(String... documentIds) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        String requestJson = mapper.writeValueAsString(documentIds);
+        HttpUrl requestUrl =
+                this.docFinityUrl.newBuilder().addPathSegments("webservices/rest/document/delete").build();
+
+        Request request =
+                new Request.Builder()
+                        .url(requestUrl)
+                        .post(RequestBody.create(requestJson, MEDIA_TYPE_JSON))
+                        .build();
+
+        try (Response response = client.newCall(request).execute()) {}
+    }
+
     private void logRequest(Request request) throws IOException {
         String body = LOG_NO_REQUEST_BODY;
         if (request.body() != null && request.body().contentType().equals(MEDIA_TYPE_JSON)) {
