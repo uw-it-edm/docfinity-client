@@ -77,12 +77,12 @@ public class DocFinityDtoMapperTest {
     public void buildIndexingDtoShouldExpandMultiSelectValuesFromServerMetadata() {
         // arrange
         DocFinityDtoMapper mapper = buildMapper(ImmutableMap.of("Field1", "User Value"));
-        DocumentServerMetadataDTO prompt = new DocumentServerMetadataDTO("123", "Test Field");
-        prompt.setStrDefaultValue(new String[] {"Value1", "Value2"});
+        DocumentServerMetadataDTO metadataDto = new DocumentServerMetadataDTO("123", "Test Field");
+        metadataDto.setStrDefaultValue(new String[] {"Value1", "Value2"});
 
         // act
         DocumentIndexingDTO result =
-                mapper.buildIndexingDtoFromServerMetadataDtos(Arrays.asList(prompt));
+                mapper.buildIndexingDtoFromServerMetadataDtos(Arrays.asList(metadataDto));
 
         // assert
         assertThat(
