@@ -6,10 +6,8 @@ import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
 import edu.uw.edm.docfinity.models.DocumentServerMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentTypeDTOSearchResult;
 import edu.uw.edm.docfinity.models.DocumentTypeMetadataDTO;
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -50,34 +48,26 @@ public class DocFinityClient {
     /**
     * Uploads and indexes a document to DocFinity.
     *
-    * @param file File to upload.
-    * @param categoryName Category name to index document.
-    * @param documentTypeName Document type name to index document.
-    * @param metadata Map of metadata object names with their value to use when indexing.
+    * @param args Class that encapsulates arguments for create document operation.
     */
-    public CreateDocumentResult createDocument(
-            File file, String categoryName, String documentTypeName, Map<String, Object> metadata)
-            throws IOException {
-
-        Preconditions.checkNotNull(file, "file is required.");
-        Preconditions.checkNotNull(categoryName, "categoryName is required.");
-        Preconditions.checkNotNull(documentTypeName, "documentTypeName is required.");
-        Preconditions.checkNotNull(metadata, "metadata is required.");
-        Preconditions.checkArgument(file.exists(), "file must exist.");
+    public CreateDocumentResult createDocument(CreateDocumentArgs args) throws IOException {
+        Preconditions.checkNotNull(args, "args is required.");
+        args.validate();
 
         // 1. Get the document type id from the category and document names.
-        String documentTypeId = getDocumentTypeId(categoryName, documentTypeName);
+        String documentTypeId = getDocumentTypeId(args.getCategoryName(), args.getDocumentTypeName());
         log.info("Retrieved document type id: {}", documentTypeId);
 
         // 2. Get the metadata objects from the document type id.
         List<DocumentTypeMetadataDTO> metadataDtos = getMetadataDefinitions(documentTypeId);
 
         // 3. Upload file.
-        String documentId = this.service.uploadDocument(file);
+        String documentId = this.service.uploadDocument(args.getFile());
         log.info("File uploaded, document id: {}", documentId);
 
         // 4. Execute data sources from the partial client metadata and retrieve full server metadata.
-        DocFinityDtoMapper dtoMapper = new DocFinityDtoMapper(documentTypeId, documentId, metadata);
+        DocFinityDtoMapper dtoMapper =
+                new DocFinityDtoMapper(documentTypeId, documentId, args.getMetadata());
 
         DatasourceRunningDTO datasourceDto = dtoMapper.buildDatasourceDtoFromMetadata(metadataDtos);
         List<DocumentServerMetadataDTO> serverMetadataDtos = this.service.runDatasources(datasourceDto);

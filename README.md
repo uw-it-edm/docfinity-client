@@ -85,7 +85,7 @@ Configure your IDE to launch the `docfinity-client-cli/src/main/java/edu/uw/edm/
 - -f: Path to file to upload or "test" to use a sample file.
 - -c: Category name to index document.
 - -d: Document type name to index document.
-- -j: Metadata to index as json string, ie. `"{ \"FieldName\": \"FieldValue\"}"`
+- -j: Metadata array to index as json string, ie. `"[{ \"name\": \"FieldName\": \"value\": \"FieldValue\" }"`
 - --trace: Turns on request tracing
 
 ## Run CLI with Gradle

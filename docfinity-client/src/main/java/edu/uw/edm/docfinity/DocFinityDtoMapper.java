@@ -1,11 +1,13 @@
 package edu.uw.edm.docfinity;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Multimap;
 import edu.uw.edm.docfinity.models.DatasourceRunningDTO;
 import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
 import edu.uw.edm.docfinity.models.DocumentIndexingMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentServerMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentTypeMetadataDTO;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -18,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class DocFinityDtoMapper {
     private final String documentTypeId;
     private final String documentId;
-    private final Map<String, Object> clientMetadata;
+    private final Multimap<String, Object> clientMetadata;
 
     /** Builds the data to execute datasources from the given metadata object definitions. */
     public DatasourceRunningDTO buildDatasourceDtoFromMetadata(
@@ -31,11 +33,11 @@ public class DocFinityDtoMapper {
                         .collect(Collectors.toMap(DocumentTypeMetadataDTO::getMetadataName, m -> m));
 
         List<DocumentIndexingMetadataDTO> indexingMetadataDtos =
-                clientMetadata.entrySet().stream()
+                clientMetadata.entries().stream()
                         .map(
-                                m -> {
-                                    String metadataId = metadataDefinitionsByName.get(m.getKey()).getMetadataId();
-                                    return new DocumentIndexingMetadataDTO(metadataId, m.getValue());
+                                entry -> {
+                                    String metadataId = metadataDefinitionsByName.get(entry.getKey()).getMetadataId();
+                                    return new DocumentIndexingMetadataDTO(metadataId, entry.getValue());
                                 })
                         .collect(Collectors.toList());
 
@@ -50,11 +52,19 @@ public class DocFinityDtoMapper {
             List<DocumentServerMetadataDTO> serverMetadataDtos) {
         Preconditions.checkNotNull(serverMetadataDtos, "serverMetadataDtos is required.");
 
-        // TODO: Add validation and checks.
-        List<DocumentIndexingMetadataDTO> indexMetadatas =
-                serverMetadataDtos.stream()
-                        .map(c -> new DocumentIndexingMetadataDTO(c.getId(), c.getStrDefaultValue()))
-                        .collect(Collectors.toList());
+        List<DocumentIndexingMetadataDTO> indexMetadatas = new ArrayList<>();
+
+        for (DocumentServerMetadataDTO metadataDto : serverMetadataDtos) {
+            Object[] values = metadataDto.getStrDefaultValue();
+
+            // Note that for multi-selection fields an entry is added for each selection using the same
+            // field metadata id.
+            if (values != null) {
+                for (Object value : values) {
+                    indexMetadatas.add(new DocumentIndexingMetadataDTO(metadataDto.getId(), value));
+                }
+            }
+        }
 
         return new DocumentIndexingDTO(documentTypeId, documentId, indexMetadatas);
     }

@@ -75,12 +75,10 @@ public class DocFinityClientTest {
                 new DocumentServerMetadataDTO("123", "Test Field", "DataSource Value"));
 
         // act
-        CreateDocumentResult result =
-                client.createDocument(
-                        testFile,
-                        "testCategory",
-                        "testDocumentType",
-                        ImmutableMap.of("Test Field", "User Value"));
+        CreateDocumentArgs args =
+                new CreateDocumentArgs(testFile, "testCategory", "testDocumentType")
+                        .withMetadata(ImmutableMap.of("Test Field", "User Value"));
+        CreateDocumentResult result = client.createDocument(args);
 
         // assert
         assertEquals(testDocumentId, result.getDocumentId());
