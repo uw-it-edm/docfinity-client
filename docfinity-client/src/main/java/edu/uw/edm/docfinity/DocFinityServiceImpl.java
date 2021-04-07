@@ -217,6 +217,6 @@ public class DocFinityServiceImpl implements DocFinityService {
             body = responseBodyCopy.string();
         }
 
-        log.trace("[Response] Status Code: {}\n{}", response.code(), body);
+        log.trace("[Response] Status Code: {}\n{}\n", response.code(), body);
     }
 }
