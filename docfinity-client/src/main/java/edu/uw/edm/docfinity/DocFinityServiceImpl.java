@@ -38,6 +38,8 @@ public class DocFinityServiceImpl implements DocFinityService {
     private static final String HEADER_XSRF_TOKEN = "X-XSRF-TOKEN";
     private static final String HEADER_XSRF_TOKEN_VALUE = "edm-token";
     private static final String HEADER_AUDIT_USER = "X-AUDITUSER";
+    private static final String HEADER_AUTHORIZATION = "Authorization";
+    private static final String HEADER_COOKIE = "Cookie";
     private static final String HEADER_COOKIE_VALUE = "XSRF-TOKEN=edm-token";
     private static final String LOG_NO_REQUEST_BODY = "[No Request Body]";
     private static final String LOG_NO_RESPONSE_BODY = "[No Response Body]";
@@ -61,13 +63,12 @@ public class DocFinityServiceImpl implements DocFinityService {
         public Response intercept(Interceptor.Chain chain) throws IOException {
             Request originalRequest = chain.request();
 
-            // todo: move header strings to statics
             Builder builder =
                     originalRequest
                             .newBuilder()
-                            .header("Authorization", "Bearer " + apiKey)
+                            .header(HEADER_AUTHORIZATION, "Bearer " + apiKey)
                             .header(HEADER_XSRF_TOKEN, HEADER_XSRF_TOKEN_VALUE)
-                            .header("Cookie", HEADER_COOKIE_VALUE);
+                            .header(HEADER_COOKIE, HEADER_COOKIE_VALUE);
 
             if (!Strings.isNullOrEmpty(auditUser)) {
                 // Audit user is not required and only needs to be added if supplied.
