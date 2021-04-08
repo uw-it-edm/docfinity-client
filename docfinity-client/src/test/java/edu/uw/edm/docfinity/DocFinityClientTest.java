@@ -81,7 +81,8 @@ public class DocFinityClientTest {
 
         // act
         CreateDocumentArgs args =
-                new CreateDocumentArgs(testFile, "testCategory", "testDocumentType")
+                new CreateDocumentArgs("testCategory", "testDocumentType")
+                        .withFile(testFile)
                         .withMetadata(ImmutableMap.of("Test Field", "User Value"));
         CreateDocumentResult result = client.createDocument(args);
 
@@ -99,7 +100,8 @@ public class DocFinityClientTest {
         when(mockService.getDocumentTypes(any(), any())).thenReturn(new DocumentTypeDTOSearchResult());
 
         // act
-        CreateDocumentArgs args = new CreateDocumentArgs(testFile, "testCategory", "testDocumentType");
+        CreateDocumentArgs args =
+                new CreateDocumentArgs("testCategory", "testDocumentType").withFile(testFile);
 
         IllegalStateException thrown =
                 assertThrows(IllegalStateException.class, () -> client.createDocument(args));
@@ -118,7 +120,8 @@ public class DocFinityClientTest {
                 .thenReturn(DocumentTypeDTOSearchResult.from("DocTypeId-1", "DocTypeId-2"));
 
         // act
-        CreateDocumentArgs args = new CreateDocumentArgs(testFile, "testCategory", "testDocumentType");
+        CreateDocumentArgs args =
+                new CreateDocumentArgs("testCategory", "testDocumentType").withFile(testFile);
         IllegalStateException thrown =
                 assertThrows(IllegalStateException.class, () -> client.createDocument(args));
 
@@ -136,7 +139,8 @@ public class DocFinityClientTest {
 
         // act
         CreateDocumentArgs args =
-                new CreateDocumentArgs(testFile, "category", "documentType")
+                new CreateDocumentArgs("category", "documentType")
+                        .withFile(testFile)
                         .withMetadata(ImmutableMap.of("Field2", "User Value"));
         assertThrows(IllegalStateException.class, () -> client.createDocument(args));
 
@@ -153,7 +157,8 @@ public class DocFinityClientTest {
 
         // act
         CreateDocumentArgs args =
-                new CreateDocumentArgs(testFile, "category", "documentType")
+                new CreateDocumentArgs("category", "documentType")
+                        .withFile(testFile)
                         .withMetadata(ImmutableMap.of("Field1", "User Value"));
         assertThrows(Exception.class, () -> client.createDocument(args));
 

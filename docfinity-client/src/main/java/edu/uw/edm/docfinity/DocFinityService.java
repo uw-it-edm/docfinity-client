@@ -29,6 +29,14 @@ public interface DocFinityService {
     String uploadDocument(File file) throws IOException;
 
     /**
+    * Represents call to '/servlet/upload' to upload file as byte array.
+    *
+    * @param content Document content as byte array.
+    * @param name Name of document.
+    */
+    String uploadDocument(byte[] content, String name) throws IOException;
+
+    /**
     * Represents call to 'webservices/rest/documentType/metadata' to retrieve metadata objects for a
     * given document type.
     *

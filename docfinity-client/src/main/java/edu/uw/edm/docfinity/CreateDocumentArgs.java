@@ -16,7 +16,13 @@ import lombok.RequiredArgsConstructor;
 @AllArgsConstructor
 public class CreateDocumentArgs {
     /** File to upload. */
-    private final File file;
+    private File file;
+
+    /** File content to upload. */
+    private byte[] fileContent;
+
+    /** File name to upload. */
+    private String fileName;
 
     /** Category name to index document. */
     private final String categoryName;
@@ -59,16 +65,52 @@ public class CreateDocumentArgs {
         return cloned;
     }
 
+    /**
+    * Creates new arguments class with a File.
+    *
+    * @param file File to upload.
+    */
+    public CreateDocumentArgs withFile(File file) {
+        CreateDocumentArgs cloned = this.newCopy();
+        cloned.setFile(file);
+        return cloned;
+    }
+
+    /**
+    * Creates new arguments class with file to upload as byte array.
+    *
+    * @param fileContent Content of file to upload.
+    * @param fileName Name of file to upload.
+    */
+    public CreateDocumentArgs withFileContent(byte[] fileContent, String fileName) {
+        CreateDocumentArgs cloned = this.newCopy();
+        cloned.setFileContent(fileContent);
+        cloned.setFileName(fileName);
+        return cloned;
+    }
+
     /** Checks the values of all properties are valid. */
     public void validate() {
         Preconditions.checkNotNull(categoryName, "categoryName is required.");
         Preconditions.checkNotNull(documentTypeName, "documentTypeName is required.");
         Preconditions.checkNotNull(metadata, "metadata is required.");
-        Preconditions.checkArgument(file.exists(), "file must exist.");
+
+        if (file == null && fileContent == null) {
+            throw new IllegalStateException("file or fileContent must be specified.");
+        } else if (file != null && fileContent != null) {
+            throw new IllegalStateException("Cannot specify both file and fileContent.");
+        } else if (file != null) {
+            Preconditions.checkArgument(file.exists(), "file must exist.");
+        } else {
+            Preconditions.checkNotNull(fileName, "fileName is required if fileContent is specified.");
+        }
     }
 
     private CreateDocumentArgs newCopy() {
-        CreateDocumentArgs cloned = new CreateDocumentArgs(file, categoryName, documentTypeName);
+        CreateDocumentArgs cloned = new CreateDocumentArgs(categoryName, documentTypeName);
+        cloned.setFile(file);
+        cloned.setFileContent(fileContent);
+        cloned.setFileName(fileName);
         cloned.setMetadata(ArrayListMultimap.create(this.metadata));
         return cloned;
     }

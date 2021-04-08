@@ -23,13 +23,13 @@ public class DocFinityDtoMapperTest {
 
     private DocFinityDtoMapper buildMapper(Map<String, Object> userMetadata) {
         CreateDocumentArgs args =
-                new CreateDocumentArgs(null, categoryName, documentTypeName).withMetadata(userMetadata);
+                new CreateDocumentArgs(categoryName, documentTypeName).withMetadata(userMetadata);
         return new DocFinityDtoMapper(args);
     }
 
     private DocFinityDtoMapper buildMapper(Multimap<String, Object> userMetadata) {
-        CreateDocumentArgs args =
-                new CreateDocumentArgs(null, categoryName, documentTypeName, userMetadata);
+        CreateDocumentArgs args = new CreateDocumentArgs(categoryName, documentTypeName);
+        args.setMetadata(userMetadata);
         return new DocFinityDtoMapper(args);
     }
 

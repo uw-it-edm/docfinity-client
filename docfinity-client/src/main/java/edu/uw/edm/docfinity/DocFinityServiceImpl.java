@@ -109,7 +109,15 @@ public class DocFinityServiceImpl implements DocFinityService {
 
     @Override
     public String uploadDocument(File file) throws IOException {
+        return uploadDocument(file.getName(), RequestBody.create(file, MEDIA_TYPE_OCTET_STREAM));
+    }
 
+    @Override
+    public String uploadDocument(byte[] content, String name) throws IOException {
+        return uploadDocument(name, RequestBody.create(content, MEDIA_TYPE_OCTET_STREAM));
+    }
+
+    private String uploadDocument(String name, RequestBody fileRequestBody) throws IOException {
         HttpUrl requestUrl = this.docFinityUrl.newBuilder().addPathSegments("servlet/upload").build();
 
         RequestBody body =
@@ -117,8 +125,7 @@ public class DocFinityServiceImpl implements DocFinityService {
                         .setType(MultipartBody.FORM)
                         .addFormDataPart("json", "1")
                         .addFormDataPart("entryMethod", "FILE_UPLOAD")
-                        .addFormDataPart(
-                                "upload_files", file.getName(), RequestBody.create(file, MEDIA_TYPE_OCTET_STREAM))
+                        .addFormDataPart("upload_files", name, fileRequestBody)
                         .build();
 
         Request request = new Request.Builder().url(requestUrl).post(body).build();

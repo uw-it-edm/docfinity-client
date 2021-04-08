@@ -68,7 +68,7 @@ public class DocFinityClient {
         List<DocumentIndexingMetadataDTO> partialDtos = mapper.getPartialIndexingDtos(metadata);
 
         // 3. Upload file.
-        String documentId = this.service.uploadDocument(args.getFile());
+        String documentId = uploadFile(args);
         log.info("File uploaded, document id: {}", documentId);
 
         try {
@@ -90,6 +90,16 @@ public class DocFinityClient {
 
         // Build result to return to client.
         return new CreateDocumentResult(documentId);
+    }
+
+    private String uploadFile(CreateDocumentArgs args) throws IOException {
+        String documentId;
+        if (args.getFile() != null) {
+            documentId = this.service.uploadDocument(args.getFile());
+        } else {
+            documentId = this.service.uploadDocument(args.getFileContent(), args.getFileName());
+        }
+        return documentId;
     }
 
     private void tryDeleteDocument(String documentId) {

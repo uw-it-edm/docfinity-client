@@ -99,7 +99,9 @@ public class DocFinityClientCLI {
         cliLogger.info("Starting");
         DocFinityClient client = new DocFinityClient(cli.url, cli.apiKey, cli.auditUser);
         CreateDocumentArgs args =
-                new CreateDocumentArgs(file, cli.category, cli.documentType).withMetadata(metadata);
+                new CreateDocumentArgs(cli.category, cli.documentType)
+                        .withFile(file)
+                        .withMetadata(metadata);
         CreateDocumentResult result = client.createDocument(args);
         cliLogger.info("Result: {}", result.getDocumentId());
     }
