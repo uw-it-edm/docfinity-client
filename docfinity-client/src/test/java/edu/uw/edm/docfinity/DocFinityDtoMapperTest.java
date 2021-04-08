@@ -2,7 +2,6 @@ package edu.uw.edm.docfinity;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.*;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import com.google.common.collect.ArrayListMultimap;
@@ -11,7 +10,6 @@ import com.google.common.collect.Multimap;
 import edu.uw.edm.docfinity.models.DocumentIndexingMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentServerMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentTypeMetadataDTO;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -31,24 +29,6 @@ public class DocFinityDtoMapperTest {
         CreateDocumentArgs args = new CreateDocumentArgs(categoryName, documentTypeName);
         args.setMetadata(userMetadata);
         return new DocFinityDtoMapper(args);
-    }
-
-    @Test
-    public void getPartialIndexingDtoShouldParseDateMetadata() throws Exception {
-        // arrange
-        String expectedDate = "20-12-2014";
-        DocFinityDtoMapper mapper = buildMapper(ImmutableMap.of("Field1", expectedDate));
-        DocumentTypeMetadataDTO field1 = new DocumentTypeMetadataDTO("111", "Field1");
-        field1.setMetadataType(MetadataTypeEnum.DATE);
-        Map<String, DocumentTypeMetadataDTO> metadata = ImmutableMap.of("Field1", field1);
-
-        // act
-        List<DocumentIndexingMetadataDTO> result = mapper.getPartialIndexingDtos(metadata);
-
-        // assert
-        assertEquals(
-                new SimpleDateFormat(DocFinityDtoMapper.DATE_FORMAT).parse(expectedDate),
-                result.get(0).getValue());
     }
 
     @Test
@@ -90,38 +70,6 @@ public class DocFinityDtoMapperTest {
         assertThat(
                 thrown.getMessage(),
                 containsString("Document type 'documentType' is missing metadata object named 'Field3'."));
-    }
-
-    @Test
-    public void getPartialIndexingDtoShouldThrowErrorIfUnableToParseStringForDateMetadata() {
-        // arrange
-        DocFinityDtoMapper mapper = buildMapper(ImmutableMap.of("Field1", "bad-date"));
-        DocumentTypeMetadataDTO field1 = new DocumentTypeMetadataDTO("111", "Field1");
-        field1.setMetadataType(MetadataTypeEnum.DATE);
-        Map<String, DocumentTypeMetadataDTO> metadata = ImmutableMap.of("Field1", field1);
-
-        // act
-        IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> mapper.getPartialIndexingDtos(metadata));
-
-        // assert
-        assertThat(thrown.getMessage(), containsString("Unable to parse value 'bad-date'"));
-    }
-
-    @Test
-    public void getPartialIndexingDtoShouldThrowErrorIfUnableToParseNonStringForDateMetadata() {
-        // arrange
-        DocFinityDtoMapper mapper = buildMapper(ImmutableMap.of("Field1", 100));
-        DocumentTypeMetadataDTO field1 = new DocumentTypeMetadataDTO("111", "Field1");
-        field1.setMetadataType(MetadataTypeEnum.DATE);
-        Map<String, DocumentTypeMetadataDTO> metadata = ImmutableMap.of("Field1", field1);
-
-        // act
-        IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> mapper.getPartialIndexingDtos(metadata));
-
-        // assert
-        assertThat(thrown.getMessage(), containsString("Unable to parse value '100'"));
     }
 
     @Test

@@ -5,8 +5,6 @@ import com.google.common.base.Strings;
 import edu.uw.edm.docfinity.models.DocumentIndexingMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentServerMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentTypeMetadataDTO;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -95,17 +93,7 @@ public class DocFinityDtoMapper {
     }
 
     private Object getTypedMetadataValue(Object value, DocumentTypeMetadataDTO metadata) {
-        if (metadata.getMetadataType() == MetadataTypeEnum.DATE) {
-            if (value instanceof String) {
-                try {
-                    return new SimpleDateFormat(DATE_FORMAT).parse((String) value);
-                } catch (ParseException e) {
-                    throwUnableToParseDate(value, metadata.getMetadataName(), e);
-                }
-            } else {
-                throwUnableToParseDate(value, metadata.getMetadataName(), null);
-            }
-        } else if (metadata.getMetadataType() == MetadataTypeEnum.INTEGER
+        if (metadata.getMetadataType() == MetadataTypeEnum.INTEGER
                 && value instanceof Integer == false
                 && value instanceof Long == false) {
 
