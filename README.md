@@ -23,7 +23,58 @@ dependencies {
 ```
 # Use
 
-TODO: Once library is implemented add sample use case here.
+## Basic Create
+
+```
+DocFinityClient client = new DocFinityClient("<DocFinity URL>", "<DocFinity API KEY>");
+
+CreateDocumentArgs createArgs =
+    new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
+        .withFile(new File("<path to file>"))
+        .withMetadata(ImmutableMap.of("<Metadata Name>", "<Metadata Value>"));
+
+CreateDocumentResult result = client.createDocument(createArgs);
+System.out.printf(result.getDocumentId());
+```
+
+## Create with different metadata types
+
+```
+...
+CreateDocumentArgs createArgs = 
+    new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
+        .withMetadata(ImmutableMap.of(
+            "Integer Field", 100,
+            "Decimal Field", 100.99
+            "Date Field", 1627282800000 // <-- milliseconds elapsed since January 1, 1970.
+        ));
+...
+```
+
+## Create with multi-select metadata
+
+```
+...
+Multimap<String, Object> metadata = ArrayListMultimap.create();
+metadata.put("MultiSelect Field", "First Value");
+metadata.put("MultiSelect Field", "Second Value");
+metadata.put("MultiSelect Field", "Third Value");
+CreateDocumentArgs args = 
+    new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
+        .withMetadata(metadata));
+...
+```
+
+## Create with byte[] as content
+
+```
+...
+byte[] content;
+CreateDocumentArgs args = 
+    new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
+        .withFileContent(content, "file name.txt"));
+...
+```
 
 # Design
 ## Motivation
@@ -97,7 +148,3 @@ You can also use the CLI with arguments from gradle (instead of running from the
 ```
 ./gradlew run --args="--help"
 ```
-
-# Integration Tests
-
-TODO: To be filled up when the project includes integration tests.
