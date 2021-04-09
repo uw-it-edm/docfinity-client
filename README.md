@@ -25,7 +25,7 @@ dependencies {
 
 ## Basic Create
 
-```
+```java
 DocFinityClient client = new DocFinityClient("<DocFinity URL>", "<DocFinity API KEY>");
 
 CreateDocumentArgs createArgs =
@@ -39,8 +39,7 @@ System.out.printf(result.getDocumentId());
 
 ## Create with different metadata types
 
-```
-...
+```java
 CreateDocumentArgs createArgs = 
     new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
         .withMetadata(ImmutableMap.of(
@@ -48,13 +47,11 @@ CreateDocumentArgs createArgs =
             "Decimal Field", 100.99
             "Date Field", 1627282800000 // <-- milliseconds elapsed since January 1, 1970.
         ));
-...
 ```
 
 ## Create with multi-select metadata
 
-```
-...
+```java
 Multimap<String, Object> metadata = ArrayListMultimap.create();
 metadata.put("MultiSelect Field", "First Value");
 metadata.put("MultiSelect Field", "Second Value");
@@ -62,18 +59,15 @@ metadata.put("MultiSelect Field", "Third Value");
 CreateDocumentArgs args = 
     new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
         .withMetadata(metadata));
-...
 ```
 
 ## Create with byte[] as content
 
-```
-...
+```java
 byte[] content;
 CreateDocumentArgs args = 
     new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
         .withFileContent(content, "file name.txt"));
-...
 ```
 
 # Design
