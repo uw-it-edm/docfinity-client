@@ -1,0 +1,15 @@
+{
+  "extends": [
+    "config:base",
+    "schedule:weekends",
+    ":prHourlyLimit4"
+  ],
+  "masterIssue": true,
+  "prConcurrentLimit": 4,
+  "packageRules": [
+    {
+      "updateTypes": ["minor", "patch"],
+      "automerge": true
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+buildscript {
+  repositories {
+    jcenter()
+    maven { url "https://raw.githubusercontent.com/uw-it-edm/edm-artifacts/master" }
+    maven { url "https://plugins.gradle.org/m2/" }
+  }
+  dependencies {
+    classpath "edu.uw.concert:gradle-gitflow:0.3.2"
+    classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.21.0"
+    classpath "com.diffplug.spotless:spotless-plugin-gradle:5.11.1"
+  }
+  configurations.all {
+    // Pins the version of jgit to the one used by gradle-gitflow, jgit v5 has a breaking change.
+    resolutionStrategy.force "org.eclipse.jgit:org.eclipse.jgit:4.3.1.201605051710-r"
+  }
+}
+
+subprojects {
+    apply plugin: "java"
+    apply plugin: "com.jfrog.artifactory"
+    apply plugin: "com.diffplug.spotless"
+    apply plugin: "edu.uw.concert.gitflow"
+    apply plugin: "maven-publish"
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        implementation "ch.qos.logback:logback-classic:1.2.3"
+        testImplementation "junit:junit:4.13.2"
+    }
+
+    gitflow {
+        // Child projects need to change location of the git repo to the root project.
+        repositoryRoot rootDir.path
+    }
+
+    spotless {
+        java {
+            // Style guide: https://google.github.io/styleguide/javaguide
+            // EDM team uses 4 spaces instead of the default 2 in the the style guide.
+            googleJavaFormat()
+            indentWithTabs(2)
+            indentWithSpaces(4)
+        }
+    }
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                from components.java
+
+                groupId = "edu.uw.edm.docfinity"
+            }
+        }
+    }
+
+    artifactory {
+        contextUrl = System.getenv('ARTIFACTORY_CONTEXT')
+
+        publish {
+            repository {
+                username = System.getenv("ARTIFACTORY_PUBLISH_USER")
+                password = System.getenv("ARTIFACTORY_PUBLISH_PASSWORD")
+
+                // By default publish to 'snapshot' repository.
+                def inferredRepoKey = System.getenv('ARTIFACTORY_SNAPSHOT_REPO')
+
+                // Switch to 'release' repo if the version is detected as not being 'in-development'.
+                if (!version.toString().contains("SNAPSHOT") && !version.toString().contains("dirty")) {
+                    inferredRepoKey = System.getenv('ARTIFACTORY_RELEASE_REPO')
+                }
+
+                repoKey = inferredRepoKey
+                logger.lifecycle "Using $inferredRepoKey as publishing repo"
+            }
+
+            defaults {
+                publications('mavenJava')
+            }
+        }
+    }
+
+    // make sure we have an artifact to publish
+    artifactoryPublish.dependsOn jar
+
+    // Skip publishing if gitflow marks this version as in-development.
+    if (version.toString().contains("dirty")) {
+        artifactoryPublish.skip = true // as documented
+        artifactoryPublish.onlyIf { false } // NOT documented
+    }
+}
