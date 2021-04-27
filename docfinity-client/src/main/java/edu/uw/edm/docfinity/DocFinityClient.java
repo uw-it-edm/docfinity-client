@@ -53,7 +53,7 @@ public class DocFinityClient {
     *
     * @param args Class that encapsulates arguments for create document operation.
     */
-    public CreateDocumentResult createDocument(CreateDocumentArgs args) throws IOException {
+    public CreateDocumentResult createDocument(CreateDocumentArgs args) throws Exception {
         Preconditions.checkNotNull(args, "args is required.");
         args.validate();
 
@@ -64,7 +64,7 @@ public class DocFinityClient {
         log.info("Retrieved document type id: {}", documentTypeId);
 
         // 2. Get the metadata objects from the document type id and validate inputs.
-        Map<String, DocumentTypeMetadataDTO> metadata = getDocumentTypeMetadata(documentTypeId, args);
+        Map<String, DocumentTypeMetadataDTO> metadata = getDocumentTypeMetadata(documentTypeId);
         List<DocumentIndexingMetadataDTO> partialDtos = mapper.getPartialIndexingDtos(metadata);
 
         // 3. Upload file.
@@ -92,6 +92,39 @@ public class DocFinityClient {
         return new CreateDocumentResult(documentId);
     }
 
+    /**
+    * Reindexes a document to DocFinity.
+    *
+    * @param args Class that encapsulates arguments for update document operation.
+    */
+    public UpdateDocumentResult updateDocument(UpdateDocumentArgs args) throws Exception {
+        Preconditions.checkNotNull(args, "args is required.");
+        args.validate();
+
+        DocFinityDtoMapper mapper = new DocFinityDtoMapper(args);
+        String documentId = args.getDocumentId();
+
+        // 1. Get the document type id from the category and document names.
+        String documentTypeId = getDocumentTypeId(args.getCategoryName(), args.getDocumentTypeName());
+        log.info("Retrieved document type id: {}", documentTypeId);
+
+        // 2. Get the metadata objects from the document type id and validate inputs.
+        Map<String, DocumentTypeMetadataDTO> metadata = getDocumentTypeMetadata(documentTypeId);
+        List<DocumentIndexingMetadataDTO> partialDtos = mapper.getPartialIndexingDtos(metadata);
+
+        // 3. Execute data sources from the partial client metadata and retrieve full server metadata.
+        List<DocumentServerMetadataDTO> serverDtos =
+                this.service.runDatasources(
+                        new DatasourceRunningDTO(documentTypeId, documentId, partialDtos));
+
+        // 4. Reindex the document using the calculated values from datasources.
+        List<DocumentIndexingMetadataDTO> finalDtos = mapper.getFinalIndexingDtos(metadata, serverDtos);
+        this.service.reindexDocuments(new DocumentIndexingDTO(documentTypeId, documentId, finalDtos));
+
+        // Build result to return to client.
+        return new UpdateDocumentResult();
+    }
+
     private String uploadFile(CreateDocumentArgs args) throws IOException {
         String documentId;
         if (args.getFile() != null) {
@@ -111,8 +144,8 @@ public class DocFinityClient {
         }
     }
 
-    private Map<String, DocumentTypeMetadataDTO> getDocumentTypeMetadata(
-            String documentTypeId, CreateDocumentArgs args) throws IOException {
+    private Map<String, DocumentTypeMetadataDTO> getDocumentTypeMetadata(String documentTypeId)
+            throws IOException {
 
         List<DocumentTypeMetadataDTO> metadata = this.service.getDocumentTypeMetadata(documentTypeId);
 

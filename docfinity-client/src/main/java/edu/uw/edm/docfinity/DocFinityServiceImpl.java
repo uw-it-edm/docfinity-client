@@ -185,13 +185,26 @@ public class DocFinityServiceImpl implements DocFinityService {
     @Override
     public List<DocumentIndexingDTO> indexDocuments(DocumentIndexingDTO... documents)
             throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        String requestJson = mapper.writeValueAsString(documents);
         HttpUrl requestUrl =
                 this.docFinityUrl
                         .newBuilder()
                         .addPathSegments("webservices/rest/indexing/index/commit")
                         .build();
+        return this.indexDocuments(requestUrl, documents);
+    }
+
+    @Override
+    public List<DocumentIndexingDTO> reindexDocuments(DocumentIndexingDTO... documents)
+            throws IOException {
+        HttpUrl requestUrl =
+                this.docFinityUrl.newBuilder().addPathSegments("webservices/rest/indexing/reindex").build();
+        return this.indexDocuments(requestUrl, documents);
+    }
+
+    private List<DocumentIndexingDTO> indexDocuments(
+            HttpUrl requestUrl, DocumentIndexingDTO... documents) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        String requestJson = mapper.writeValueAsString(documents);
 
         Request request =
                 new Request.Builder()

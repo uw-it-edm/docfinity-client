@@ -8,7 +8,6 @@ Table of Contents:
 1. [Use](#Use)
 1. [Design](#Design)
 1. [Setup for Development](#Setup-for-Development)
-1. [Integration Tests](#Integration-Tests)
 
 # Install
 
@@ -28,8 +27,7 @@ dependencies {
 ```java
 DocFinityClient client = new DocFinityClient("<DocFinity URL>", "<DocFinity API KEY>");
 
-CreateDocumentArgs createArgs =
-    new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
+CreateDocumentArgs createArgs = new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
         .withFile(new File("<path to file>"))
         .withMetadata(ImmutableMap.of("<Metadata Name>", "<Metadata Value>"));
 
@@ -37,11 +35,21 @@ CreateDocumentResult result = client.createDocument(createArgs);
 System.out.printf(result.getDocumentId());
 ```
 
+## Basic Update
+
+```java
+DocFinityClient client = new DocFinityClient("<DocFinity URL>", "<DocFinity API KEY>");
+
+UpdateDocumentArgs updateArgs = new UpdateDocumentArgs("<DocumentId>", "<Category>", "<DocumentTypeName>")
+        .withMetadata(ImmutableMap.of("<Metadata Name>", "<Metadata Value>"));
+
+UpdateDocumentResult result = client.updateDocument(updateArgs);
+```
+
 ## Create with different metadata types
 
 ```java
-CreateDocumentArgs createArgs = 
-    new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
+CreateDocumentArgs createArgs =  new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
         .withMetadata(ImmutableMap.of(
             "Integer Field", 100,
             "Decimal Field", 100.99
@@ -56,8 +64,7 @@ Multimap<String, Object> metadata = ArrayListMultimap.create();
 metadata.put("MultiSelect Field", "First Value");
 metadata.put("MultiSelect Field", "Second Value");
 metadata.put("MultiSelect Field", "Third Value");
-CreateDocumentArgs args = 
-    new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
+CreateDocumentArgs args = new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
         .withMetadata(metadata));
 ```
 
@@ -65,8 +72,7 @@ CreateDocumentArgs args =
 
 ```java
 byte[] content;
-CreateDocumentArgs args = 
-    new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
+CreateDocumentArgs args =  new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
         .withFileContent(content, "file name.txt"));
 ```
 

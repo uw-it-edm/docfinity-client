@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DocFinityDtoMapper {
     public static final String DATE_FORMAT = "dd-MM-yyyy";
-    private final CreateDocumentArgs args;
+    private final IndexDocumentArgs args;
 
     /**
     * Builds and validates the indexing models from the user data and metadata definitions which are
@@ -107,14 +107,6 @@ public class DocFinityDtoMapper {
         }
 
         return value;
-    }
-
-    private void throwUnableToParseDate(Object value, String metadataName, Throwable e) {
-        String message =
-                String.format(
-                        "Unable to parse value '%s' as date with format '%s' for metadata object '%s'.",
-                        value, DATE_FORMAT, metadataName);
-        throw new IllegalStateException(message, e);
     }
 
     private void throwMetadataRequiredException(String metadataName) {

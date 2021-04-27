@@ -54,6 +54,9 @@ public interface DocFinityService {
     /** Represents call to 'webservices/rest/indexing/index/commit' to index and commit a document. */
     List<DocumentIndexingDTO> indexDocuments(DocumentIndexingDTO... documents) throws IOException;
 
+    /** Represents call to 'webservices/rest/indexing/reindex' to reindex document. */
+    List<DocumentIndexingDTO> reindexDocuments(DocumentIndexingDTO... documents) throws IOException;
+
     /**
     * Represents call to 'webservices/rest/document/delete' to soft-delete documents from DocFinity
     */

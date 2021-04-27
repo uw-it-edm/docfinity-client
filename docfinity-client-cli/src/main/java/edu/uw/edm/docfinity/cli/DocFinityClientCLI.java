@@ -10,6 +10,8 @@ import edu.uw.edm.docfinity.CreateDocumentResult;
 import edu.uw.edm.docfinity.DocFinityClient;
 import edu.uw.edm.docfinity.DocFinityDocumentField;
 import edu.uw.edm.docfinity.DocFinityServiceImpl;
+import edu.uw.edm.docfinity.UpdateDocumentArgs;
+import edu.uw.edm.docfinity.UpdateDocumentResult;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
@@ -35,6 +37,12 @@ public class DocFinityClientCLI {
     String apiKey;
 
     @Parameter(
+            names = {"--action", "-a"},
+            converter = ActionEnumConverter.class,
+            description = "Action to perform (create or update).")
+    ActionEnum action = ActionEnum.create;
+
+    @Parameter(
             names = {"--category", "-c"},
             required = true,
             description = "Name of document category to use when creating a new document.")
@@ -48,9 +56,14 @@ public class DocFinityClientCLI {
 
     @Parameter(
             names = {"--file", "-f"},
-            required = true,
-            description = "Path of file to upload, or 'test' to upload a sample file")
+            description =
+                    "Path of file to upload, or 'test' to upload a sample file. Required for 'create' action.")
     String filePath;
+
+    @Parameter(
+            names = {"--documentId", "-i"},
+            description = "Id of document to update. Required for 'update' action.")
+    String documentId;
 
     @Parameter(
             names = {"--metadataJson", "-j"},
@@ -96,14 +109,23 @@ public class DocFinityClientCLI {
         setupRequestTracing(cli);
 
         // Run the client.
-        cliLogger.info("Starting");
         DocFinityClient client = new DocFinityClient(cli.url, cli.apiKey, cli.auditUser);
-        CreateDocumentArgs args =
-                new CreateDocumentArgs(cli.category, cli.documentType)
-                        .withFile(file)
-                        .withMetadata(metadata);
-        CreateDocumentResult result = client.createDocument(args);
-        cliLogger.info("Result: {}", result.getDocumentId());
+        cliLogger.info("Starting");
+
+        if (cli.action == ActionEnum.create) {
+            CreateDocumentArgs args =
+                    new CreateDocumentArgs(cli.category, cli.documentType)
+                            .withFile(file)
+                            .withMetadata(metadata);
+            CreateDocumentResult result = client.createDocument(args);
+            cliLogger.info("Result: {}", result.getDocumentId());
+        } else {
+            UpdateDocumentArgs args =
+                    new UpdateDocumentArgs(cli.documentId, cli.category, cli.documentType)
+                            .withMetadata(metadata);
+            UpdateDocumentResult result = client.updateDocument(args);
+            cliLogger.info("Result: {}", result);
+        }
     }
 
     private static void setupRequestTracing(DocFinityClientCLI cli) {
