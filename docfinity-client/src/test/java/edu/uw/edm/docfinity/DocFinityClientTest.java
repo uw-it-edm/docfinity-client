@@ -3,6 +3,7 @@ package edu.uw.edm.docfinity;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
@@ -67,6 +68,14 @@ public class DocFinityClientTest {
         verify(mockService).indexDocuments(new DocumentIndexingDTO[] {expected});
     }
 
+    private void verifyReindexDocumentsArg(DocumentIndexingMetadataDTO... documentIndexingMetadata)
+            throws Exception {
+        DocumentIndexingDTO expected =
+                new DocumentIndexingDTO(
+                        testDocumentTypeId, testDocumentId, Arrays.asList(documentIndexingMetadata));
+        verify(mockService).reindexDocuments(new DocumentIndexingDTO[] {expected});
+    }
+
     /**
     * Setup: Document type with a single metadata object with a data source set that will change the
     * value when indexing.
@@ -90,6 +99,31 @@ public class DocFinityClientTest {
         assertEquals(testDocumentId, result.getDocumentId());
         verifyRunDatasourcesArg(new DocumentIndexingMetadataDTO("123", "Test Field", "User Value"));
         verifyIndexDocumentsArg(
+                new DocumentIndexingMetadataDTO("123", "Test Field", "DataSource Value"));
+    }
+
+    /**
+    * Setup: Document type with a single metadata object with a data source set that will change the
+    * value when indexing.
+    */
+    @Test
+    public void shouldUpdateDocumentWithOneField() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        setupDocumentTypeMetadataReturn(new DocumentTypeMetadataDTO("123", "Test Field"));
+        setupRunDatasourcesReturn(
+                new DocumentServerMetadataDTO("123", "Test Field", "DataSource Value"));
+
+        // act
+        UpdateDocumentArgs args =
+                new UpdateDocumentArgs(testDocumentId, "testCategory", "testDocumentType")
+                        .withMetadata(ImmutableMap.of("Test Field", "User Value"));
+        UpdateDocumentResult result = client.updateDocument(args);
+
+        // assert
+        assertNotNull(result);
+        verifyRunDatasourcesArg(new DocumentIndexingMetadataDTO("123", "Test Field", "User Value"));
+        verifyReindexDocumentsArg(
                 new DocumentIndexingMetadataDTO("123", "Test Field", "DataSource Value"));
     }
 
