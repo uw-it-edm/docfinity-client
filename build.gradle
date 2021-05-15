@@ -7,7 +7,7 @@ buildscript {
   dependencies {
     classpath "edu.uw.concert:gradle-gitflow:0.3.2"
     classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.23.4"
-    classpath "com.diffplug.spotless:spotless-plugin-gradle:5.12.4"
+    classpath "com.diffplug.spotless:spotless-plugin-gradle:5.12.5"
   }
   configurations.all {
     // Pins the version of jgit to the one used by gradle-gitflow, jgit v5 has a breaking change.
