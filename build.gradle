@@ -6,7 +6,7 @@ buildscript {
   }
   dependencies {
     classpath "edu.uw.concert:gradle-gitflow:0.3.2"
-    classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.24.4"
+    classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.24.5"
     classpath "com.diffplug.spotless:spotless-plugin-gradle:5.13.0"
   }
   configurations.all {
