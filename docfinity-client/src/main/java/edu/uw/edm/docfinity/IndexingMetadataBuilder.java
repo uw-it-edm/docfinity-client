@@ -1,0 +1,156 @@
+package edu.uw.edm.docfinity;
+
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
+import edu.uw.edm.docfinity.models.DocumentIndexingMetadataDTO;
+import edu.uw.edm.docfinity.models.MetadataDTO;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+/** Helper class that builds and validates the metadata information for indexing documents. */
+public class IndexingMetadataBuilder {
+    private final String documentTypeName;
+    private final Map<String, MetadataDTO> metadataMap;
+    private final Map<String, DocumentIndexingMetadataDTO> currentIndexingDtos;
+    private final List<DocumentIndexingMetadataDTO> indexingDtos;
+
+    public IndexingMetadataBuilder(
+            String documentTypeName,
+            Map<String, MetadataDTO> metadataMap,
+            List<DocumentIndexingMetadataDTO> currentIndexingDtos) {
+        Preconditions.checkNotNull(documentTypeName, "documentTypeName is required.");
+        Preconditions.checkNotNull(metadataMap, "metadataMap is required.");
+        Preconditions.checkNotNull(currentIndexingDtos, "currentIndexingDtos is required.");
+
+        indexingDtos = new ArrayList<>();
+        this.documentTypeName = documentTypeName;
+        this.metadataMap = metadataMap;
+        this.currentIndexingDtos =
+                currentIndexingDtos.stream()
+                        .collect(Collectors.toMap(DocumentIndexingMetadataDTO::getMetadataId, i -> i));
+    }
+
+    /** Adds an indexing field entry. */
+    public IndexingMetadataBuilder addValue(DocFinityDocumentField field) {
+        Multimap<String, Object> tempMap = ArrayListMultimap.create();
+        tempMap.put(field.getMetadataName(), field.getValue());
+        return addValues(tempMap);
+    }
+
+    /** Adds multiple indexing field entries. */
+    public IndexingMetadataBuilder addValues(Multimap<String, Object> fields) {
+        Preconditions.checkNotNull(fields, "fields is required.");
+
+        for (Map.Entry<String, Object> entry : fields.entries()) {
+            String metadataName = entry.getKey();
+            MetadataDTO metadataDto = metadataMap.get(metadataName);
+
+            if (metadataDto == null) {
+                throwMetadataDoesNotExistException(metadataName, metadataMap);
+            }
+
+            DocumentIndexingMetadataDTO currentIndexingDto = currentIndexingDtos.get(metadataDto.getId());
+            String indexingDtoId = currentIndexingDto != null ? currentIndexingDto.getId() : null;
+            String metadataId = metadataDto.getId();
+            Object metadataValue = getTypedMetadataValue(entry.getValue(), metadataDto);
+            DocumentIndexingMetadataDTO indexingDto =
+                    new DocumentIndexingMetadataDTO(indexingDtoId, metadataId, metadataName, metadataValue);
+
+            if (indexingDtoId != null && isNullOrEmpty(metadataValue)) {
+                indexingDto.setMarkedForDelete(true);
+            }
+
+            indexingDtos.add(indexingDto);
+        }
+
+        return this;
+    }
+
+    /**
+    * Validates that all required metadata defined in document type exists and has value in indexing
+    * data. Used for document creates.
+    */
+    public void validateAllRequiredFieldsHaveValue() {
+        for (MetadataDTO dto : this.metadataMap.values()) {
+            String metadataName = dto.getName();
+            MetadataDTO metadata = metadataMap.get(metadataName);
+            boolean metadataRequired = metadata != null && metadata.isRequired();
+
+            if (metadataRequired) {
+                Optional<DocumentIndexingMetadataDTO> field =
+                        this.indexingDtos.stream()
+                                .filter(f -> metadataName.equals(f.getMetadataName()))
+                                .findFirst();
+
+                if (!field.isPresent() || isNullOrEmpty(field.get().getValue())) {
+                    throwMetadataRequiredException(metadataName);
+                }
+            }
+        }
+    }
+
+    /**
+    * Validates that entries in indexing data that are marked as required in metadata have values.
+    * Used for document updates.
+    */
+    public void validateRequiredFieldsPresentHaveValue() {
+        for (DocumentIndexingMetadataDTO dto : this.indexingDtos) {
+            String metadataName = dto.getMetadataName();
+            MetadataDTO metadata = metadataMap.get(metadataName);
+            boolean metadataRequired = metadata != null && metadata.isRequired();
+
+            if (metadataRequired && isNullOrEmpty(dto.getValue())) {
+                throwMetadataRequiredException(metadataName);
+            }
+        }
+    }
+
+    public List<DocumentIndexingMetadataDTO> build() {
+        return indexingDtos;
+    }
+
+    private boolean isNullOrEmpty(Object value) {
+        if (value instanceof String) {
+            return Strings.isNullOrEmpty((String) value);
+        } else {
+            return value == null;
+        }
+    }
+
+    private void throwMetadataRequiredException(String metadataName) {
+        throw new IllegalStateException(
+                String.format(
+                        "Missing value for required metadata '%s' for document type '%s'.",
+                        metadataName, this.documentTypeName));
+    }
+
+    private void throwMetadataDoesNotExistException(
+            String metadataName, Map<String, MetadataDTO> metadataMap) {
+        throw new IllegalStateException(
+                String.format(
+                        "Document type '%s' is missing metadata object named '%s'. Available metadata: %s.",
+                        this.documentTypeName, metadataName, String.join(", ", metadataMap.keySet())));
+    }
+
+    private Object getTypedMetadataValue(Object value, MetadataDTO metadata) {
+        if (metadata.getDataType() == MetadataTypeEnum.INTEGER
+                && value instanceof Integer == false
+                && value instanceof Long == false) {
+
+            // Note: This case is validated because if client sends a decimal, DocFinity will silently
+            // round to integer and is a potential data loss.
+            String message =
+                    String.format(
+                            "Invalid integer value for metadata object '%s'. Type: %s. Value: %s",
+                            metadata.getName(), value.getClass(), value);
+            throw new IllegalStateException(message);
+        }
+
+        return value;
+    }
+}

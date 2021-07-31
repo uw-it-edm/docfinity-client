@@ -1,13 +1,12 @@
 package edu.uw.edm.docfinity;
 
 import com.google.common.base.Preconditions;
-import edu.uw.edm.docfinity.models.DatasourceRunningDTO;
 import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
 import edu.uw.edm.docfinity.models.DocumentIndexingMetadataDTO;
-import edu.uw.edm.docfinity.models.DocumentServerMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentTypeDTOSearchResult;
-import edu.uw.edm.docfinity.models.DocumentTypeMetadataDTO;
+import edu.uw.edm.docfinity.models.MetadataDTO;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -53,43 +52,47 @@ public class DocFinityClient {
     *
     * @param args Class that encapsulates arguments for create document operation.
     */
-    public CreateDocumentResult createDocument(CreateDocumentArgs args) throws Exception {
+    public DocumentIndexingDTO createDocument(CreateDocumentArgs args) throws Exception {
         Preconditions.checkNotNull(args, "args is required.");
         args.validate();
-
-        DocFinityDtoMapper mapper = new DocFinityDtoMapper(args);
 
         // 1. Get the document type id from the category and document names.
         String documentTypeId = getDocumentTypeId(args.getCategoryName(), args.getDocumentTypeName());
         log.info("Retrieved document type id: {}", documentTypeId);
 
-        // 2. Get the metadata objects from the document type id and validate inputs.
-        Map<String, DocumentTypeMetadataDTO> metadata = getDocumentTypeMetadata(documentTypeId);
-        List<DocumentIndexingMetadataDTO> partialDtos = mapper.getPartialIndexingDtos(metadata);
-
-        // 3. Upload file.
+        // 2. Upload file.
         String documentId = uploadFile(args);
         log.info("File uploaded, document id: {}", documentId);
 
         try {
-            // 4. Execute data sources from the partial client metadata and retrieve full server metadata.
-            List<DocumentServerMetadataDTO> serverDtos =
-                    this.service.runDatasources(
-                            new DatasourceRunningDTO(documentTypeId, documentId, partialDtos));
+            // 3. Get all metadata prompts and validate inputs
+            Map<String, MetadataDTO> metadata = getDocumentMetadataMap(documentTypeId, documentId);
+            IndexingMetadataBuilder builder =
+                    new IndexingMetadataBuilder(args.getDocumentTypeName(), metadata, Arrays.asList())
+                            .addValues(args.getMetadata());
+
+            // 4. Execute datasources.
+            DatasourceExecutor executor = new DatasourceExecutor(this.service);
+            ExecuteDatasourceArgs executeArgs = new ExecuteDatasourceArgs();
+            executeArgs.setDocumentId(documentId);
+            executeArgs.setDocumentTypeId(documentTypeId);
+            executeArgs.setDocumentTypeName(args.getDocumentTypeName());
+            executeArgs.setCategory(args.getCategoryName());
+            executeArgs.setClientFields(args.getMetadata());
+            executeArgs.setMetadataMap(metadata);
+            executor.executeDatasources(executeArgs).stream().forEach(field -> builder.addValue(field));
 
             // 5. Index and commit the document using the calculated values from datasources.
-            List<DocumentIndexingMetadataDTO> finalDtos =
-                    mapper.getFinalIndexingDtos(metadata, serverDtos);
-            this.service.indexDocuments(new DocumentIndexingDTO(documentTypeId, documentId, finalDtos));
-
+            builder.validateAllRequiredFieldsHaveValue();
+            List<DocumentIndexingMetadataDTO> indexingDtos = builder.build();
+            DocumentIndexingDTO indexingDto =
+                    new DocumentIndexingDTO(documentTypeId, documentId, indexingDtos);
+            return this.service.indexDocuments(indexingDto).stream().findFirst().get();
         } catch (Exception e) {
             // 6. If there is an error after the file has been upload it, need to delete it from server.
             this.tryDeleteDocument(documentId);
             throw e;
         }
-
-        // Build result to return to client.
-        return new CreateDocumentResult(documentId);
     }
 
     /**
@@ -97,32 +100,51 @@ public class DocFinityClient {
     *
     * @param args Class that encapsulates arguments for update document operation.
     */
-    public UpdateDocumentResult updateDocument(UpdateDocumentArgs args) throws Exception {
+    public DocumentIndexingDTO updateDocument(UpdateDocumentArgs args) throws Exception {
         Preconditions.checkNotNull(args, "args is required.");
         args.validate();
 
-        DocFinityDtoMapper mapper = new DocFinityDtoMapper(args);
         String documentId = args.getDocumentId();
 
         // 1. Get the document type id from the category and document names.
         String documentTypeId = getDocumentTypeId(args.getCategoryName(), args.getDocumentTypeName());
         log.info("Retrieved document type id: {}", documentTypeId);
 
-        // 2. Get the metadata objects from the document type id and validate inputs.
-        Map<String, DocumentTypeMetadataDTO> metadata = getDocumentTypeMetadata(documentTypeId);
-        List<DocumentIndexingMetadataDTO> partialDtos = mapper.getPartialIndexingDtos(metadata);
+        // 2. Get all metadata prompts and validate inputs
+        Map<String, MetadataDTO> metadata = getDocumentMetadataMap(documentTypeId, documentId);
+        DocumentIndexingDTO indexingData = service.getDocumentIndexingData(documentId);
 
-        // 3. Execute data sources from the partial client metadata and retrieve full server metadata.
-        List<DocumentServerMetadataDTO> serverDtos =
-                this.service.runDatasources(
-                        new DatasourceRunningDTO(documentTypeId, documentId, partialDtos));
+        IndexingMetadataBuilder builder =
+                new IndexingMetadataBuilder(
+                                args.getDocumentTypeName(), metadata, indexingData.getIndexingMetadata())
+                        .addValues(args.getMetadata());
+
+        // 3. Execute datasources.
+        DatasourceExecutor executor = new DatasourceExecutor(this.service);
+        ExecuteDatasourceArgs executeArgs = new ExecuteDatasourceArgs();
+        executeArgs.setDocumentId(documentId);
+        executeArgs.setDocumentTypeId(documentTypeId);
+        executeArgs.setDocumentTypeName(args.getDocumentTypeName());
+        executeArgs.setCategory(args.getCategoryName());
+        executeArgs.setClientFields(args.getMetadata());
+        executeArgs.setMetadataMap(metadata);
+        executor.executeDatasources(executeArgs).stream().forEach(field -> builder.addValue(field));
 
         // 4. Reindex the document using the calculated values from datasources.
-        List<DocumentIndexingMetadataDTO> finalDtos = mapper.getFinalIndexingDtos(metadata, serverDtos);
-        this.service.reindexDocuments(new DocumentIndexingDTO(documentTypeId, documentId, finalDtos));
+        builder.validateRequiredFieldsPresentHaveValue();
+        List<DocumentIndexingMetadataDTO> indexingDtos = builder.build();
+        DocumentIndexingDTO indexingDto =
+                new DocumentIndexingDTO(documentTypeId, documentId, indexingDtos);
+        indexingDto.setMetadataLoaded(true); // treat this as a partial reindex
+        return this.service.reindexDocuments(indexingDto).stream().findFirst().get();
+    }
 
-        // Build result to return to client.
-        return new UpdateDocumentResult();
+    private Map<String, MetadataDTO> getDocumentMetadataMap(String documentTypeId, String documentId)
+            throws IOException {
+
+        List<MetadataDTO> metadata = service.getDocumentMetadata(documentTypeId, documentId);
+
+        return metadata.stream().collect(Collectors.toMap(MetadataDTO::getName, m -> m));
     }
 
     private String uploadFile(CreateDocumentArgs args) throws IOException {
@@ -142,17 +164,6 @@ public class DocFinityClient {
         } catch (IOException e) {
             log.error("Failed to delete document '%s'. Error Message: ", documentId, e.getMessage());
         }
-    }
-
-    private Map<String, DocumentTypeMetadataDTO> getDocumentTypeMetadata(String documentTypeId)
-            throws IOException {
-
-        List<DocumentTypeMetadataDTO> metadata = this.service.getDocumentTypeMetadata(documentTypeId);
-
-        Preconditions.checkNotNull(metadata, "getDocumentTypeMetadata() result is null.");
-
-        return metadata.stream()
-                .collect(Collectors.toMap(DocumentTypeMetadataDTO::getMetadataName, m -> m));
     }
 
     private String getDocumentTypeId(String categoryName, String documentTypeName)
