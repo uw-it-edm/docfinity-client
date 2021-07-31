@@ -2,11 +2,12 @@ package edu.uw.edm.docfinity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
-import edu.uw.edm.docfinity.models.DatasourceRunningDTO;
+import edu.uw.edm.docfinity.models.DocumentControlsRequestDTO;
 import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
-import edu.uw.edm.docfinity.models.DocumentServerMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentTypeDTOSearchResult;
-import edu.uw.edm.docfinity.models.DocumentTypeMetadataDTO;
+import edu.uw.edm.docfinity.models.ExecuteDatasourceRequestDTO;
+import edu.uw.edm.docfinity.models.ExecuteDatasourceResponseDTO;
+import edu.uw.edm.docfinity.models.MetadataDTO;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -137,15 +138,35 @@ public class DocFinityServiceImpl implements DocFinityService {
     }
 
     @Override
-    public List<DocumentTypeMetadataDTO> getDocumentTypeMetadata(String documentTypeId)
-            throws IOException {
-
+    public List<ExecuteDatasourceResponseDTO> executeDatasource(
+            ExecuteDatasourceRequestDTO requestDto) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        String requestJson = mapper.writeValueAsString(requestDto);
         HttpUrl requestUrl =
                 this.docFinityUrl
                         .newBuilder()
-                        .addPathSegments("webservices/rest/documentType/metadata")
-                        .addQueryParameter("id", documentTypeId)
-                        .addQueryParameter("includeIndexing", "true")
+                        .addPathSegments("webservices/rest/indexing/executeDatasource")
+                        .build();
+
+        Request request =
+                new Request.Builder()
+                        .url(requestUrl)
+                        .post(RequestBody.create(requestJson, MEDIA_TYPE_JSON))
+                        .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            return Arrays.asList(
+                    mapper.readValue(response.body().string(), ExecuteDatasourceResponseDTO[].class));
+        }
+    }
+
+    @Override
+    public DocumentIndexingDTO getDocumentIndexingData(String documentId) throws IOException {
+        HttpUrl requestUrl =
+                this.docFinityUrl
+                        .newBuilder()
+                        .addPathSegments("webservices/rest/indexing/data")
+                        .addQueryParameter("documentId", documentId)
                         .build();
 
         Request request = new Request.Builder().url(requestUrl).build();
@@ -153,17 +174,16 @@ public class DocFinityServiceImpl implements DocFinityService {
         try (Response response = client.newCall(request).execute()) {
             ObjectMapper objectMapper = new ObjectMapper();
 
-            return Arrays.asList(
-                    objectMapper.readValue(response.body().string(), DocumentTypeMetadataDTO[].class));
+            return objectMapper.readValue(response.body().string(), DocumentIndexingDTO.class);
         }
     }
 
     @Override
-    public List<DocumentServerMetadataDTO> runDatasources(DatasourceRunningDTO datasourceRunningDto)
+    public List<MetadataDTO> getDocumentMetadata(String documentTypeId, String documentId)
             throws IOException {
-
         ObjectMapper mapper = new ObjectMapper();
-        String requestJson = mapper.writeValueAsString(datasourceRunningDto);
+        String requestJson =
+                mapper.writeValueAsString(new DocumentControlsRequestDTO(documentTypeId, documentId));
         HttpUrl requestUrl =
                 this.docFinityUrl
                         .newBuilder()
@@ -177,8 +197,7 @@ public class DocFinityServiceImpl implements DocFinityService {
                         .build();
 
         try (Response response = client.newCall(request).execute()) {
-            return Arrays.asList(
-                    mapper.readValue(response.body().string(), DocumentServerMetadataDTO[].class));
+            return Arrays.asList(mapper.readValue(response.body().string(), MetadataDTO[].class));
         }
     }
 

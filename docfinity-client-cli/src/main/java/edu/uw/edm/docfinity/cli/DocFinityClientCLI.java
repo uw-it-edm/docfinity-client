@@ -6,12 +6,11 @@ import com.beust.jcommander.Parameter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import edu.uw.edm.docfinity.CreateDocumentArgs;
-import edu.uw.edm.docfinity.CreateDocumentResult;
 import edu.uw.edm.docfinity.DocFinityClient;
 import edu.uw.edm.docfinity.DocFinityDocumentField;
 import edu.uw.edm.docfinity.DocFinityServiceImpl;
 import edu.uw.edm.docfinity.UpdateDocumentArgs;
-import edu.uw.edm.docfinity.UpdateDocumentResult;
+import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
@@ -110,6 +109,7 @@ public class DocFinityClientCLI {
 
         // Run the client.
         DocFinityClient client = new DocFinityClient(cli.url, cli.apiKey, cli.auditUser);
+        ObjectMapper mapper = new ObjectMapper();
         cliLogger.info("Starting");
 
         if (cli.action == ActionEnum.create) {
@@ -117,14 +117,14 @@ public class DocFinityClientCLI {
                     new CreateDocumentArgs(cli.category, cli.documentType)
                             .withFile(file)
                             .withMetadata(metadata);
-            CreateDocumentResult result = client.createDocument(args);
-            cliLogger.info("Result: {}", result.getDocumentId());
+            DocumentIndexingDTO result = client.createDocument(args);
+            cliLogger.info("Result: {}", mapper.writeValueAsString(result));
         } else {
             UpdateDocumentArgs args =
                     new UpdateDocumentArgs(cli.documentId, cli.category, cli.documentType)
                             .withMetadata(metadata);
-            UpdateDocumentResult result = client.updateDocument(args);
-            cliLogger.info("Result: {}", result);
+            DocumentIndexingDTO result = client.updateDocument(args);
+            cliLogger.info("Result: {}", mapper.writeValueAsString(result));
         }
     }
 
