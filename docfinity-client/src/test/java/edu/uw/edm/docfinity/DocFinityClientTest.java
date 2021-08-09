@@ -3,7 +3,9 @@ package edu.uw.edm.docfinity;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
@@ -47,6 +49,7 @@ public class DocFinityClientTest {
 
         // Return the same indexingDto that was passed in.
         when(mockService.reindexDocuments(any())).thenAnswer(i -> Arrays.asList(i.getArguments()[0]));
+        when(mockService.indexDocuments(any())).thenAnswer(i -> Arrays.asList(i.getArguments()[0]));
     }
 
     private void setupDocumentMetadataReturn(MetadataDTO... expectedMetadata) throws Exception {
@@ -77,6 +80,96 @@ public class DocFinityClientTest {
         return new CreateDocumentArgs("category", "documentType")
                 .withFile(testFile)
                 .withMetadata(Arrays.asList(field));
+    }
+
+    @Test
+    public void shouldCreateDocumentWithMultiSetMetadata() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        MetadataDTO field = new MetadataDTO("111", "Field");
+        field.setAllowMultipleValues(true);
+        setupDocumentMetadataReturn(field);
+
+        // act
+        CreateDocumentArgs args =
+                new CreateDocumentArgs("category", "documentType")
+                        .withFile(testFile)
+                        .withMetadata(
+                                Arrays.asList(
+                                        new DocFinityDocumentField("Field", "Value1"),
+                                        new DocFinityDocumentField("Field", "Value2")));
+
+        DocumentIndexingDTO result = client.createDocument(args);
+
+        // assert
+        assertEquals(2, result.getIndexingMetadata().size());
+        assertEquals("Value1", result.getIndexingMetadata().get(0).getValue());
+        assertEquals("Value2", result.getIndexingMetadata().get(1).getValue());
+    }
+
+    @Test
+    public void shouldReplaceMultiSetMetadataOnUpdate() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        MetadataDTO field = new MetadataDTO("FieldId", "Field");
+        field.setAllowMultipleValues(true);
+
+        setupDocumentMetadataReturn(field);
+        setupDocumentIndexingDataReturn(
+                new DocumentIndexingMetadataDTO("111", "FieldId", "Field", "FieldValue1"),
+                new DocumentIndexingMetadataDTO("222", "FieldId", "Field", "FieldValue2"));
+
+        // act
+        UpdateDocumentArgs args = buildUpdateArgs("Field", "NewValue");
+        DocumentIndexingDTO result = client.updateDocument(args);
+
+        // assert
+        assertEquals(3, result.getIndexingMetadata().size());
+        DocumentIndexingMetadataDTO dto1 = result.getIndexingMetadata().get(0);
+        DocumentIndexingMetadataDTO dto2 = result.getIndexingMetadata().get(1);
+        DocumentIndexingMetadataDTO dto3 = result.getIndexingMetadata().get(2);
+        assertTrue("Expected dto1 to be deleted", dto1.isMarkedForDelete());
+        assertTrue("Expected dto2 to be deleted", dto2.isMarkedForDelete());
+        assertFalse("Expected dto3 to be added", dto3.isMarkedForDelete());
+
+        assertEquals("111", dto1.getId());
+        assertEquals("222", dto2.getId());
+        assertNull("Expected dto3 to have null id", dto3.getId());
+    }
+
+    /**
+    * Note that in this case to be able to validate multi-select required fields, a null value is
+    * left on the field.
+    */
+    @Test
+    public void shouldMarkMultiSetMetadataForDeleteOnUpdate() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        MetadataDTO field = new MetadataDTO("FieldId", "Field");
+        field.setAllowMultipleValues(true);
+
+        setupDocumentMetadataReturn(field);
+        setupDocumentIndexingDataReturn(
+                new DocumentIndexingMetadataDTO("111", "FieldId", "Field", "FieldValue1"),
+                new DocumentIndexingMetadataDTO("222", "FieldId", "Field", "FieldValue2"));
+
+        // act
+        UpdateDocumentArgs args = buildUpdateArgs("Field", null);
+        DocumentIndexingDTO result = client.updateDocument(args);
+
+        // assert
+        assertEquals(3, result.getIndexingMetadata().size());
+        DocumentIndexingMetadataDTO dto1 = result.getIndexingMetadata().get(0);
+        DocumentIndexingMetadataDTO dto2 = result.getIndexingMetadata().get(1);
+        DocumentIndexingMetadataDTO dto3 = result.getIndexingMetadata().get(2);
+        assertTrue("Expected dto1 to be deleted", dto1.isMarkedForDelete());
+        assertTrue("Expected dto2 to be deleted", dto2.isMarkedForDelete());
+        assertFalse("Expected dto3 to be added", dto3.isMarkedForDelete());
+
+        assertEquals("111", dto1.getId());
+        assertEquals("222", dto2.getId());
+        assertNull("Expected dto3 to have null id", dto3.getId());
+        assertNull("Expected dto3 to have null value", dto3.getValue());
     }
 
     /**
@@ -181,6 +274,30 @@ public class DocFinityClientTest {
     }
 
     @Test
+    public void shouldThrowErrorIfSingleSelectMetadataReceivesMultipleValues() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        setupDocumentMetadataReturn(new MetadataDTO("111", "Field"));
+
+        // act
+        CreateDocumentArgs args =
+                new CreateDocumentArgs("category", "documentType")
+                        .withFile(testFile)
+                        .withMetadata(
+                                Arrays.asList(
+                                        new DocFinityDocumentField("Field", "Value1"),
+                                        new DocFinityDocumentField("Field", "Value2")));
+
+        IllegalStateException thrown =
+                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
+
+        // assert
+        assertEquals(
+                "Multiple values received for single-select field 'Field' for document type 'documentType'.",
+                thrown.getMessage());
+    }
+
+    @Test
     public void shouldThrowErrorIfDocumentTypeDoesNotExist() throws Exception {
         // arrange
         DocFinityClient client = new DocFinityClient(mockService);
@@ -233,6 +350,26 @@ public class DocFinityClientTest {
     }
 
     @Test
+    public void shouldThrowErrorIfRequiredMultiSelectMetadataValueIsNullOnUpdate() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        MetadataDTO field = new MetadataDTO("111", "Field1");
+        field.setRequired(true);
+        field.setAllowMultipleValues(true);
+        setupDocumentMetadataReturn(field);
+
+        // act
+        UpdateDocumentArgs args = buildUpdateArgs("Field1", null);
+        IllegalStateException thrown =
+                assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
+
+        // assert
+        assertEquals(
+                "Missing value for required metadata 'Field1' for document type 'documentType'.",
+                thrown.getMessage());
+    }
+
+    @Test
     public void shouldThrowErrorIfRequiredMetadataValueIsNullOnUpdate() throws Exception {
         // arrange
         DocFinityClient client = new DocFinityClient(mockService);
@@ -244,6 +381,26 @@ public class DocFinityClientTest {
         UpdateDocumentArgs args = buildUpdateArgs("Field1", null);
         IllegalStateException thrown =
                 assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
+
+        // assert
+        assertEquals(
+                "Missing value for required metadata 'Field1' for document type 'documentType'.",
+                thrown.getMessage());
+    }
+
+    @Test
+    public void shouldThrowErrorIfRequiredMultiSelectMetadataValueIsNullOnCreate() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        MetadataDTO field = new MetadataDTO("111", "Field1");
+        field.setRequired(true);
+        field.setAllowMultipleValues(true);
+        setupDocumentMetadataReturn(field);
+
+        // act
+        CreateDocumentArgs args = buildCreateArgs("Field1", null);
+        IllegalStateException thrown =
+                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
 
         // assert
         assertEquals(
