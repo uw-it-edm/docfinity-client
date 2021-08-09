@@ -4,19 +4,20 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import edu.uw.edm.docfinity.models.DocumentIndexingMetadataDTO;
 import edu.uw.edm.docfinity.models.MetadataDTO;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /** Helper class that builds and validates the metadata information for indexing documents. */
 public class IndexingMetadataBuilder {
     private final String documentTypeName;
     private final Map<String, MetadataDTO> metadataMap;
-    private final Map<String, DocumentIndexingMetadataDTO> currentIndexingDtos;
+    private final Multimap<String, DocumentIndexingMetadataDTO> currentIndexingDtos;
     private final List<DocumentIndexingMetadataDTO> indexingDtos;
 
     public IndexingMetadataBuilder(
@@ -31,8 +32,7 @@ public class IndexingMetadataBuilder {
         this.documentTypeName = documentTypeName;
         this.metadataMap = metadataMap;
         this.currentIndexingDtos =
-                currentIndexingDtos.stream()
-                        .collect(Collectors.toMap(DocumentIndexingMetadataDTO::getMetadataId, i -> i));
+                Multimaps.index(currentIndexingDtos, DocumentIndexingMetadataDTO::getMetadataId);
     }
 
     /** Adds an indexing field entry. */
@@ -46,29 +46,78 @@ public class IndexingMetadataBuilder {
     public IndexingMetadataBuilder addValues(Multimap<String, Object> fields) {
         Preconditions.checkNotNull(fields, "fields is required.");
 
-        for (Map.Entry<String, Object> entry : fields.entries()) {
+        for (Map.Entry<String, Collection<Object>> entry : fields.asMap().entrySet()) {
             String metadataName = entry.getKey();
+            List<Object> metadataValues = new ArrayList<>(entry.getValue());
             MetadataDTO metadataDto = metadataMap.get(metadataName);
 
             if (metadataDto == null) {
                 throwMetadataDoesNotExistException(metadataName, metadataMap);
             }
 
-            DocumentIndexingMetadataDTO currentIndexingDto = currentIndexingDtos.get(metadataDto.getId());
-            String indexingDtoId = currentIndexingDto != null ? currentIndexingDto.getId() : null;
-            String metadataId = metadataDto.getId();
-            Object metadataValue = getTypedMetadataValue(entry.getValue(), metadataDto);
-            DocumentIndexingMetadataDTO indexingDto =
-                    new DocumentIndexingMetadataDTO(indexingDtoId, metadataId, metadataName, metadataValue);
+            if (!metadataDto.isAllowMultipleValues()) {
+                DocumentIndexingMetadataDTO dto = getSingleValueIndexingDTO(metadataDto, metadataValues);
+                indexingDtos.add(dto);
 
-            if (indexingDtoId != null && isNullOrEmpty(metadataValue)) {
-                indexingDto.setMarkedForDelete(true);
+            } else {
+                List<DocumentIndexingMetadataDTO> dtos =
+                        getMultiValueIndexingDTO(metadataDto, metadataValues);
+                indexingDtos.addAll(dtos);
             }
-
-            indexingDtos.add(indexingDto);
         }
 
         return this;
+    }
+
+    private DocumentIndexingMetadataDTO getSingleValueIndexingDTO(
+            MetadataDTO metadataDto, List<Object> metadataValues) {
+
+        String metadataId = metadataDto.getId();
+        String metadataName = metadataDto.getName();
+
+        if (metadataValues.size() > 1) {
+            throwInvalidValuesForSingleSelectMetadata(metadataName);
+        }
+
+        Object metadataValue = getTypedMetadataValue(metadataValues.get(0), metadataDto);
+        Optional<DocumentIndexingMetadataDTO> currentIndexingDto =
+                currentIndexingDtos.get(metadataDto.getId()).stream().findFirst();
+        String indexingDtoId = currentIndexingDto.isPresent() ? currentIndexingDto.get().getId() : null;
+        DocumentIndexingMetadataDTO indexingDto =
+                new DocumentIndexingMetadataDTO(indexingDtoId, metadataId, metadataName, metadataValue);
+
+        if (indexingDtoId != null && isNullOrEmpty(metadataValue)) {
+            indexingDto.setMarkedForDelete(true);
+        }
+
+        return indexingDto;
+    }
+
+    private List<DocumentIndexingMetadataDTO> getMultiValueIndexingDTO(
+            MetadataDTO metadataDto, List<Object> metadataValues) {
+
+        List<DocumentIndexingMetadataDTO> indexingDtos = new ArrayList<>();
+        String metadataId = metadataDto.getId();
+        String metadataName = metadataDto.getName();
+
+        // Remove the current selections
+        for (DocumentIndexingMetadataDTO dto : currentIndexingDtos.get(metadataDto.getId())) {
+            DocumentIndexingMetadataDTO indexingDto =
+                    new DocumentIndexingMetadataDTO(
+                            dto.getId(), dto.getMetadataId(), metadataName, dto.getValue());
+            indexingDto.setMarkedForDelete(true);
+            indexingDtos.add(indexingDto);
+        }
+
+        // Add new selections
+        for (Object valueObj : metadataValues) {
+            Object metadataValue = getTypedMetadataValue(valueObj, metadataDto);
+            DocumentIndexingMetadataDTO indexingDto =
+                    new DocumentIndexingMetadataDTO(null, metadataId, metadataName, metadataValue);
+            indexingDtos.add(indexingDto);
+        }
+
+        return indexingDtos;
     }
 
     /**
@@ -85,6 +134,7 @@ public class IndexingMetadataBuilder {
                 Optional<DocumentIndexingMetadataDTO> field =
                         this.indexingDtos.stream()
                                 .filter(f -> metadataName.equals(f.getMetadataName()))
+                                .filter(f -> !f.isMarkedForDelete())
                                 .findFirst();
 
                 if (!field.isPresent() || isNullOrEmpty(field.get().getValue())) {
@@ -104,7 +154,7 @@ public class IndexingMetadataBuilder {
             MetadataDTO metadata = metadataMap.get(metadataName);
             boolean metadataRequired = metadata != null && metadata.isRequired();
 
-            if (metadataRequired && isNullOrEmpty(dto.getValue())) {
+            if (metadataRequired && !dto.isMarkedForDelete() && isNullOrEmpty(dto.getValue())) {
                 throwMetadataRequiredException(metadataName);
             }
         }
@@ -126,6 +176,13 @@ public class IndexingMetadataBuilder {
         throw new IllegalStateException(
                 String.format(
                         "Missing value for required metadata '%s' for document type '%s'.",
+                        metadataName, this.documentTypeName));
+    }
+
+    private void throwInvalidValuesForSingleSelectMetadata(String metadataName) {
+        throw new IllegalStateException(
+                String.format(
+                        "Multiple values received for single-select field '%s' for document type '%s'.",
                         metadataName, this.documentTypeName));
     }
 
