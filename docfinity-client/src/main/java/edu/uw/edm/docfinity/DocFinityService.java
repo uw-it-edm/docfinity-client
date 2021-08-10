@@ -1,10 +1,10 @@
 package edu.uw.edm.docfinity;
 
-import edu.uw.edm.docfinity.models.DatasourceRunningDTO;
 import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
-import edu.uw.edm.docfinity.models.DocumentServerMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentTypeDTOSearchResult;
-import edu.uw.edm.docfinity.models.DocumentTypeMetadataDTO;
+import edu.uw.edm.docfinity.models.ExecuteDatasourceRequestDTO;
+import edu.uw.edm.docfinity.models.ExecuteDatasourceResponseDTO;
+import edu.uw.edm.docfinity.models.MetadataDTO;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -37,22 +37,30 @@ public interface DocFinityService {
     String uploadDocument(byte[] content, String name) throws IOException;
 
     /**
-    * Represents call to 'webservices/rest/documentType/metadata' to retrieve metadata objects for a
-    * given document type.
-    *
-    * @param documentTypeId Document type id.
+    * Represents a call to '/indexing/data' to retrieve the indexing data for the document id
+    * specified.
     */
-    List<DocumentTypeMetadataDTO> getDocumentTypeMetadata(String documentTypeId) throws IOException;
+    DocumentIndexingDTO getDocumentIndexingData(String documentId) throws IOException;
 
     /**
-    * Represents call to 'webservices/rest/indexing/controls' to retrieve values of all metadata
-    * objects after running data sources for a given document.
+    * Represents a call to '/indexing/controls' to retrieve the metadata of document including
+    * datasource information.
+    *
+    * @param documentTypeId Id of document type to retrieve metadata for.
+    * @param documentId Id of document to retrieve metadata for.
     */
-    List<DocumentServerMetadataDTO> runDatasources(DatasourceRunningDTO datasourceRunningDto)
+    List<MetadataDTO> getDocumentMetadata(String documentTypeId, String documentId)
+            throws IOException;
+
+    /** Represents a call to '/indexing/executeDatasource' to execute a datasource for a field. */
+    List<ExecuteDatasourceResponseDTO> executeDatasource(ExecuteDatasourceRequestDTO request)
             throws IOException;
 
     /** Represents call to 'webservices/rest/indexing/index/commit' to index and commit a document. */
     List<DocumentIndexingDTO> indexDocuments(DocumentIndexingDTO... documents) throws IOException;
+
+    /** Represents call to 'webservices/rest/indexing/reindex' to reindex document. */
+    List<DocumentIndexingDTO> reindexDocuments(DocumentIndexingDTO... documents) throws IOException;
 
     /**
     * Represents call to 'webservices/rest/document/delete' to soft-delete documents from DocFinity

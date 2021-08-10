@@ -18,7 +18,7 @@ public class DocumentIndexingDTO {
     private @NonNull String documentId;
 
     @JsonProperty("documentIndexingMetadataDtos")
-    private @NonNull List<DocumentIndexingMetadataDTO> metadata;
+    private @NonNull List<DocumentIndexingMetadataDTO> indexingMetadata;
 
     private boolean metadataLoaded;
 }

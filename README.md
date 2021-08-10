@@ -8,7 +8,6 @@ Table of Contents:
 1. [Use](#Use)
 1. [Design](#Design)
 1. [Setup for Development](#Setup-for-Development)
-1. [Integration Tests](#Integration-Tests)
 
 # Install
 
@@ -25,11 +24,10 @@ dependencies {
 
 ## Basic Create
 
-```
+```java
 DocFinityClient client = new DocFinityClient("<DocFinity URL>", "<DocFinity API KEY>");
 
-CreateDocumentArgs createArgs =
-    new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
+CreateDocumentArgs createArgs = new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
         .withFile(new File("<path to file>"))
         .withMetadata(ImmutableMap.of("<Metadata Name>", "<Metadata Value>"));
 
@@ -37,43 +35,56 @@ CreateDocumentResult result = client.createDocument(createArgs);
 System.out.printf(result.getDocumentId());
 ```
 
+## Basic Update
+
+```java
+DocFinityClient client = new DocFinityClient("<DocFinity URL>", "<DocFinity API KEY>");
+
+UpdateDocumentArgs updateArgs = new UpdateDocumentArgs("<DocumentId>", "<Category>", "<DocumentTypeName>")
+        .withMetadata(ImmutableMap.of("<Metadata Name>", "<Metadata Value>"));
+
+UpdateDocumentResult result = client.updateDocument(updateArgs);
+```
+
+## Update to Clear a Metadata Field
+
+To clear a metadata field when updating a document, set the field to null or empty string.
+
+```java
+UpdateDocumentArgs updateArgs = new UpdateDocumentArgs("<DocumentId>", "<Category>", "<DocumentTypeName>")
+        .withMetadata(ImmutableMap.of("<Metadata Name>", null));
+
+UpdateDocumentResult result = client.updateDocument(updateArgs);
+```
+
 ## Create with different metadata types
 
-```
-...
-CreateDocumentArgs createArgs = 
-    new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
+```java
+CreateDocumentArgs createArgs =  new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
         .withMetadata(ImmutableMap.of(
             "Integer Field", 100,
             "Decimal Field", 100.99
             "Date Field", 1627282800000 // <-- milliseconds elapsed since January 1, 1970.
         ));
-...
 ```
 
 ## Create with multi-select metadata
 
-```
-...
+```java
 Multimap<String, Object> metadata = ArrayListMultimap.create();
 metadata.put("MultiSelect Field", "First Value");
 metadata.put("MultiSelect Field", "Second Value");
 metadata.put("MultiSelect Field", "Third Value");
-CreateDocumentArgs args = 
-    new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
+CreateDocumentArgs args = new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
         .withMetadata(metadata));
-...
 ```
 
 ## Create with byte[] as content
 
-```
-...
+```java
 byte[] content;
-CreateDocumentArgs args = 
-    new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
+CreateDocumentArgs args =  new CreateDocumentArgs("<Category>", "<DocumentTypeName>")
         .withFileContent(content, "file name.txt"));
-...
 ```
 
 # Design
@@ -94,18 +105,40 @@ REST API if it becomes necessary. For more information see [EDM DocFinity Servic
 1. Get DocumentTypeId
     - Since user is not expected to know the internal identifier for the DocumentType, given a document type name and category name, retrieve the DocumentTypeId.
     - Validate that document type exists.
-2. Get Metadata Definitions
-    - Since user is not expected to know the internal identifiers for metadata objects, using the DocumentTypeId retrieve the Metadata Object information for the DocumentType.
-    - Validate that the metadata names from user exist for the document type.
-3. Upload Document
+2. Upload Document
     - Retrieves the DocumentId for the new document.
+3. Get Metadata Definitions with Datasource Information
+    - Since user is not expected to know the internal identifiers for metadata objects, using the DocumentTypeId and DocumentId use the `/indexing/controls` end-point to retrieve the metadata that includes datasource information.
+    - Validate that the metadata names from user exist for the document type.
 4. Execute DataSources
-    - Use the `/indexing/controls` end point to send the metadata values from user (which can be a partial set) and have DocFinity execute all valid datasources and return full set of metadata values.
-    - Validate that all required fields have values and check for data source errors.
+    - For each field that has a datasource defined that depends on another field that is being indexed, use the `/indexing/executeDatasource` end-point to run the datasource and retrieve the result.
+    - Validate that all required fields have values.
 5. Index and Commit
     - Using the response from the previous step, send a request to `/indexing/index/commit` to index and commit the new document.
 6. Delete Document on Error
     - If there is an error at any point after uploading the document, delete it.
+
+## Explanation of Re-Indexing Steps
+
+1. Get DocumentTypeId
+    - Same as Indexing flow.
+2. Get Metadata Definitions with Datasource Information
+    - Same as Indexing flow.
+3. Get current Indexed data
+    - Use the `/indexing/data` end-point to retrieve the current indexed data for the document.
+4. Execute DataSources
+    - Same as Indexing flow.
+5. Re-Index
+    - Handle metadata fields that are removed by sending `markedForDelete` property on the appropiate fields.
+    - Using the response from the previous steps, send a request to `/indexing/reindex` to send partial updates to patch document metadata.
+
+## IMPORTANT: Limitations and Caveats
+
+1. Datasources only run if ALL dependency fields are provided by client in the indexing payload.
+2. If client provides an indexing value for a field that has a datasource, the client value will take precedence over the datasource result.
+3. Datasources for fields must return a single value, if an eligible datasource returns a list an error will be thrown.
+4. Dependency fields for datasources must be single-select fields.
+5. Validation of values between parent-child fields is not supported.
 
 # Setup for Development
 
