@@ -11,12 +11,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableMap;
-import edu.uw.edm.docfinity.models.DatasourceArgumentPromptDTO;
-import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
-import edu.uw.edm.docfinity.models.DocumentIndexingMetadataDTO;
-import edu.uw.edm.docfinity.models.DocumentTypeDTOSearchResult;
-import edu.uw.edm.docfinity.models.ExecuteDatasourceResponseDTO;
-import edu.uw.edm.docfinity.models.MetadataDTO;
+import edu.uw.edm.docfinity.models.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -83,7 +78,7 @@ public class DocFinityClientTest {
     }
 
     @Test
-    public void shouldCreateDocumentWithMultiSetMetadata() throws Exception {
+    public void onCreate_shouldIndexDocumentWithMultiSelectMetadata() throws Exception {
         // arrange
         DocFinityClient client = new DocFinityClient(mockService);
         MetadataDTO field = new MetadataDTO("111", "Field");
@@ -108,7 +103,100 @@ public class DocFinityClientTest {
     }
 
     @Test
-    public void shouldReplaceMultiSetMetadataOnUpdate() throws Exception {
+    public void onCreate_shouldThrowErrorIfRequiredMultiSelectMetadataValueIsNull() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        MetadataDTO field = new MetadataDTO("111", "Field1");
+        field.setRequired(true);
+        field.setAllowMultipleValues(true);
+        setupDocumentMetadataReturn(field);
+
+        // act
+        CreateDocumentArgs args = buildCreateArgs("Field1", null);
+        IllegalStateException thrown =
+                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
+
+        // assert
+        assertEquals(
+                "Missing value for required metadata 'Field1' for document type 'documentType'.",
+                thrown.getMessage());
+    }
+
+    @Test
+    public void onCreate_shouldThrowErrorIfRequiredMetadataValueIsNull() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        MetadataDTO field = new MetadataDTO("111", "Field1");
+        field.setRequired(true);
+        setupDocumentMetadataReturn(field);
+
+        // act
+        CreateDocumentArgs args = buildCreateArgs("Field1", null);
+        IllegalStateException thrown =
+                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
+
+        // assert
+        assertEquals(
+                "Missing value for required metadata 'Field1' for document type 'documentType'.",
+                thrown.getMessage());
+    }
+
+    @Test
+    public void onCreate_shouldThrowErrorIfRequiredMetadataValueIsEmptyString() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        MetadataDTO field = new MetadataDTO("111", "Field1");
+        field.setRequired(true);
+        setupDocumentMetadataReturn(field);
+
+        // act
+        CreateDocumentArgs args = buildCreateArgs("Field1", "");
+        IllegalStateException thrown =
+                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
+
+        // assert
+        assertEquals(
+                "Missing value for required metadata 'Field1' for document type 'documentType'.",
+                thrown.getMessage());
+    }
+
+    @Test
+    public void onCreate_shouldThrowErrorIfRequiredMetadataIsMissing() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        MetadataDTO field1 = new MetadataDTO("111", "Field1");
+        MetadataDTO field2 = new MetadataDTO("222", "Field2");
+        field2.setRequired(true);
+        setupDocumentMetadataReturn(field1, field2);
+
+        // act
+        CreateDocumentArgs args = buildCreateArgs("Field1", "User Value");
+        IllegalStateException thrown =
+                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
+
+        // assert
+        assertEquals(
+                "Missing value for required metadata 'Field2' for document type 'documentType'.",
+                thrown.getMessage());
+    }
+
+    @Test
+    public void onCreate_shouldDeleteDocumentIfErrorIsThrownAfterUpload() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        when(mockService.getDocumentMetadata(anyString(), anyString()))
+                .thenThrow(new IOException("Test Error"));
+
+        // act
+        CreateDocumentArgs args = buildCreateArgs("Field1", "Value1");
+        assertThrows(Exception.class, () -> client.createDocument(args));
+
+        // assert
+        verify(mockService).deleteDocuments(testDocumentId);
+    }
+
+    @Test
+    public void onUpdate_shouldReplaceMultiSelectMetadata() throws Exception {
         // arrange
         DocFinityClient client = new DocFinityClient(mockService);
         MetadataDTO field = new MetadataDTO("FieldId", "Field");
@@ -142,7 +230,7 @@ public class DocFinityClientTest {
     * left on the field.
     */
     @Test
-    public void shouldMarkMultiSetMetadataForDeleteOnUpdate() throws Exception {
+    public void onUpdate_shouldMarkMultiSelectMetadataForDelete() throws Exception {
         // arrange
         DocFinityClient client = new DocFinityClient(mockService);
         MetadataDTO field = new MetadataDTO("FieldId", "Field");
@@ -177,7 +265,7 @@ public class DocFinityClientTest {
     * other.
     */
     @Test
-    public void shouldExecuteDatasourceWhenDependantFieldIsUpdated() throws Exception {
+    public void onUpdate_shouldExecuteDatasourceForDependantField() throws Exception {
         // arrange
         DocFinityClient client = new DocFinityClient(mockService);
         MetadataDTO parentField = new MetadataDTO("111", "Parent Field");
@@ -202,7 +290,7 @@ public class DocFinityClientTest {
     }
 
     @Test
-    public void shouldMarkFieldForDeleteIfValueSetToNullOnUpdate() throws Exception {
+    public void onUpdate_shouldMarkFieldForDeleteIfValueSetToNull() throws Exception {
         // arrange
         DocFinityClient client = new DocFinityClient(mockService);
         MetadataDTO field = new MetadataDTO("111", "Field");
@@ -224,7 +312,7 @@ public class DocFinityClientTest {
     }
 
     @Test
-    public void shouldMarkFieldForDeleteIfValueSetToEmtpyOnUpdate() throws Exception {
+    public void onUpdate_shouldMarkFieldForDeleteIfValueSetToEmtpy() throws Exception {
         // arrange
         DocFinityClient client = new DocFinityClient(mockService);
         MetadataDTO field = new MetadataDTO("111", "Field");
@@ -243,6 +331,64 @@ public class DocFinityClientTest {
         assertEquals(1, result.getIndexingMetadata().size());
         assertEquals("testId", result.getIndexingMetadata().get(0).getId());
         assertTrue(result.getIndexingMetadata().get(0).isMarkedForDelete());
+    }
+
+    @Test
+    public void onUpdate_shouldThrowErrorIfRequiredMultiSelectMetadataValueIsNull() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        MetadataDTO field = new MetadataDTO("111", "Field1");
+        field.setRequired(true);
+        field.setAllowMultipleValues(true);
+        setupDocumentMetadataReturn(field);
+
+        // act
+        UpdateDocumentArgs args = buildUpdateArgs("Field1", null);
+        IllegalStateException thrown =
+                assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
+
+        // assert
+        assertEquals(
+                "Missing value for required metadata 'Field1' for document type 'documentType'.",
+                thrown.getMessage());
+    }
+
+    @Test
+    public void onUpdate_shouldThrowErrorIfRequiredMetadataValueIsNull() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        MetadataDTO field = new MetadataDTO("111", "Field1");
+        field.setRequired(true);
+        setupDocumentMetadataReturn(field);
+
+        // act
+        UpdateDocumentArgs args = buildUpdateArgs("Field1", null);
+        IllegalStateException thrown =
+                assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
+
+        // assert
+        assertEquals(
+                "Missing value for required metadata 'Field1' for document type 'documentType'.",
+                thrown.getMessage());
+    }
+
+    @Test
+    public void onUpdate_shouldThrowErrorIfRequiredMetadataValueIsEmptyString() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        MetadataDTO field = new MetadataDTO("111", "Field1");
+        field.setRequired(true);
+        setupDocumentMetadataReturn(field);
+
+        // act
+        UpdateDocumentArgs args = buildUpdateArgs("Field1", "");
+        IllegalStateException thrown =
+                assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
+
+        // assert
+        assertEquals(
+                "Missing value for required metadata 'Field1' for document type 'documentType'.",
+                thrown.getMessage());
     }
 
     @Test
@@ -271,6 +417,24 @@ public class DocFinityClientTest {
                 result.getIndexingMetadata().stream().map(m -> m.getValue()).collect(Collectors.toList());
         assertEquals(2, values.size());
         assertThat(values, hasItems("Parent Value", "Child Value"));
+    }
+
+    @Test
+    public void shouldThrowErrorIfMetadataValueIsInvalidInteger() throws Exception {
+        // arrange
+        DocFinityClient client = new DocFinityClient(mockService);
+        MetadataDTO field = new MetadataDTO("111", "Field1");
+        field.setDataType(MetadataTypeEnum.INTEGER);
+        setupDocumentMetadataReturn(field);
+
+        // act
+        UpdateDocumentArgs args = buildUpdateArgs("Field1", 100.10);
+        IllegalStateException thrown =
+                assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
+
+        // assert
+        assertThat(
+                thrown.getMessage(), containsString("Invalid integer value for metadata object 'Field1'"));
     }
 
     @Test
@@ -347,84 +511,6 @@ public class DocFinityClientTest {
         assertThat(
                 thrown.getMessage(),
                 containsString("Document type 'documentType' is missing metadata object named 'Field2'."));
-    }
-
-    @Test
-    public void shouldThrowErrorIfRequiredMultiSelectMetadataValueIsNullOnUpdate() throws Exception {
-        // arrange
-        DocFinityClient client = new DocFinityClient(mockService);
-        MetadataDTO field = new MetadataDTO("111", "Field1");
-        field.setRequired(true);
-        field.setAllowMultipleValues(true);
-        setupDocumentMetadataReturn(field);
-
-        // act
-        UpdateDocumentArgs args = buildUpdateArgs("Field1", null);
-        IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
-
-        // assert
-        assertEquals(
-                "Missing value for required metadata 'Field1' for document type 'documentType'.",
-                thrown.getMessage());
-    }
-
-    @Test
-    public void shouldThrowErrorIfRequiredMetadataValueIsNullOnUpdate() throws Exception {
-        // arrange
-        DocFinityClient client = new DocFinityClient(mockService);
-        MetadataDTO field = new MetadataDTO("111", "Field1");
-        field.setRequired(true);
-        setupDocumentMetadataReturn(field);
-
-        // act
-        UpdateDocumentArgs args = buildUpdateArgs("Field1", null);
-        IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
-
-        // assert
-        assertEquals(
-                "Missing value for required metadata 'Field1' for document type 'documentType'.",
-                thrown.getMessage());
-    }
-
-    @Test
-    public void shouldThrowErrorIfRequiredMultiSelectMetadataValueIsNullOnCreate() throws Exception {
-        // arrange
-        DocFinityClient client = new DocFinityClient(mockService);
-        MetadataDTO field = new MetadataDTO("111", "Field1");
-        field.setRequired(true);
-        field.setAllowMultipleValues(true);
-        setupDocumentMetadataReturn(field);
-
-        // act
-        CreateDocumentArgs args = buildCreateArgs("Field1", null);
-        IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
-
-        // assert
-        assertEquals(
-                "Missing value for required metadata 'Field1' for document type 'documentType'.",
-                thrown.getMessage());
-    }
-
-    @Test
-    public void shouldThrowErrorIfRequiredMetadataValueIsNullOnCreate() throws Exception {
-        // arrange
-        DocFinityClient client = new DocFinityClient(mockService);
-        MetadataDTO field = new MetadataDTO("111", "Field1");
-        field.setRequired(true);
-        setupDocumentMetadataReturn(field);
-
-        // act
-        CreateDocumentArgs args = buildCreateArgs("Field1", null);
-        IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
-
-        // assert
-        assertEquals(
-                "Missing value for required metadata 'Field1' for document type 'documentType'.",
-                thrown.getMessage());
     }
 
     @Test
@@ -511,96 +597,5 @@ public class DocFinityClientTest {
                 thrown.getMessage(),
                 containsString(
                         "Returning lists from datasources is not supported. Field 'Child Field' in document type 'documentType'."));
-    }
-
-    @Test
-    public void shouldThrowErrorIfRequiredMetadataValueIsEmptyStringOnUpdate() throws Exception {
-        // arrange
-        DocFinityClient client = new DocFinityClient(mockService);
-        MetadataDTO field = new MetadataDTO("111", "Field1");
-        field.setRequired(true);
-        setupDocumentMetadataReturn(field);
-
-        // act
-        UpdateDocumentArgs args = buildUpdateArgs("Field1", "");
-        IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
-
-        // assert
-        assertEquals(
-                "Missing value for required metadata 'Field1' for document type 'documentType'.",
-                thrown.getMessage());
-    }
-
-    @Test
-    public void shouldThrowErrorIfRequiredMetadataValueIsEmptyStringOnCreate() throws Exception {
-        // arrange
-        DocFinityClient client = new DocFinityClient(mockService);
-        MetadataDTO field = new MetadataDTO("111", "Field1");
-        field.setRequired(true);
-        setupDocumentMetadataReturn(field);
-
-        // act
-        CreateDocumentArgs args = buildCreateArgs("Field1", "");
-        IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
-
-        // assert
-        assertEquals(
-                "Missing value for required metadata 'Field1' for document type 'documentType'.",
-                thrown.getMessage());
-    }
-
-    @Test
-    public void shouldThrowErrorIfRequiredMetadataIsMissingOnCreate() throws Exception {
-        // arrange
-        DocFinityClient client = new DocFinityClient(mockService);
-        MetadataDTO field1 = new MetadataDTO("111", "Field1");
-        MetadataDTO field2 = new MetadataDTO("222", "Field2");
-        field2.setRequired(true);
-        setupDocumentMetadataReturn(field1, field2);
-
-        // act
-        CreateDocumentArgs args = buildCreateArgs("Field1", "User Value");
-        IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
-
-        // assert
-        assertEquals(
-                "Missing value for required metadata 'Field2' for document type 'documentType'.",
-                thrown.getMessage());
-    }
-
-    @Test
-    public void shouldThrowErrorIfMetadataValueIsInvalidInteger() throws Exception {
-        // arrange
-        DocFinityClient client = new DocFinityClient(mockService);
-        MetadataDTO field = new MetadataDTO("111", "Field1");
-        field.setDataType(MetadataTypeEnum.INTEGER);
-        setupDocumentMetadataReturn(field);
-
-        // act
-        UpdateDocumentArgs args = buildUpdateArgs("Field1", 100.10);
-        IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
-
-        // assert
-        assertThat(
-                thrown.getMessage(), containsString("Invalid integer value for metadata object 'Field1'"));
-    }
-
-    @Test
-    public void shouldDeleteDocumentIfErrorIsThrownAfterUpload() throws Exception {
-        // arrange
-        DocFinityClient client = new DocFinityClient(mockService);
-        when(mockService.getDocumentMetadata(anyString(), anyString()))
-                .thenThrow(new IOException("Test Error"));
-
-        // act
-        CreateDocumentArgs args = buildCreateArgs("Field1", "Value1");
-        assertThrows(Exception.class, () -> client.createDocument(args));
-
-        // assert
-        verify(mockService).deleteDocuments(testDocumentId);
     }
 }
