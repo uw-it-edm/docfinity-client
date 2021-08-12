@@ -5,12 +5,12 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
-import edu.uw.edm.docfinity.CreateDocumentArgs;
 import edu.uw.edm.docfinity.DocFinityClient;
 import edu.uw.edm.docfinity.DocFinityServiceImpl;
 import edu.uw.edm.docfinity.DocumentField;
+import edu.uw.edm.docfinity.FileIndexDocumentArgs;
+import edu.uw.edm.docfinity.IndexDocumentArgs;
 import edu.uw.edm.docfinity.IndexDocumentResult;
-import edu.uw.edm.docfinity.UpdateDocumentArgs;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
@@ -113,15 +113,15 @@ public class DocFinityClientCLI {
         cliLogger.info("Starting");
 
         if (cli.action == ActionEnum.create) {
-            CreateDocumentArgs args =
-                    new CreateDocumentArgs(cli.category, cli.documentType)
+            FileIndexDocumentArgs args =
+                    new FileIndexDocumentArgs(cli.category, cli.documentType)
                             .withFile(file)
                             .withMetadata(metadata);
             IndexDocumentResult result = client.uploadIndexAndCommitDocument(args);
             cliLogger.info("Result: {}", mapper.writeValueAsString(result.getIndexingDto()));
         } else {
-            UpdateDocumentArgs args =
-                    new UpdateDocumentArgs(cli.documentId, cli.category, cli.documentType)
+            IndexDocumentArgs args =
+                    new IndexDocumentArgs(cli.documentId, cli.category, cli.documentType)
                             .withMetadata(metadata);
             IndexDocumentResult result = client.reindexDocument(args);
             cliLogger.info("Result: {}", mapper.writeValueAsString(result.getIndexingDto()));

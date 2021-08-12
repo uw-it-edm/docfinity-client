@@ -5,8 +5,8 @@ import java.io.File;
 import lombok.Getter;
 import lombok.Setter;
 
-/** Encapsulates the arguments for creating a document. */
-public class CreateDocumentArgs extends IndexDocumentArgs<CreateDocumentArgs> {
+/** Encapsulates the arguments for uploading and indexing a document. */
+public class FileIndexDocumentArgs extends IndexDocumentArgsBase<FileIndexDocumentArgs> {
     /** File to upload. */
     @Getter @Setter private File file;
 
@@ -16,7 +16,7 @@ public class CreateDocumentArgs extends IndexDocumentArgs<CreateDocumentArgs> {
     /** File name to upload. */
     @Getter @Setter private String fileName;
 
-    public CreateDocumentArgs(String categoryName, String documentTypeName) {
+    public FileIndexDocumentArgs(String categoryName, String documentTypeName) {
         super(categoryName, documentTypeName);
     }
 
@@ -25,7 +25,7 @@ public class CreateDocumentArgs extends IndexDocumentArgs<CreateDocumentArgs> {
     *
     * @param file File to upload.
     */
-    public CreateDocumentArgs withFile(File file) {
+    public FileIndexDocumentArgs withFile(File file) {
         this.setFile(file);
         return this;
     }
@@ -36,7 +36,7 @@ public class CreateDocumentArgs extends IndexDocumentArgs<CreateDocumentArgs> {
     * @param fileContent Content of file to upload.
     * @param fileName Name of file to upload.
     */
-    public CreateDocumentArgs withFileContent(byte[] fileContent, String fileName) {
+    public FileIndexDocumentArgs withFileContent(byte[] fileContent, String fileName) {
         this.setFileContent(fileContent);
         this.setFileName(fileName);
         return this;
@@ -59,7 +59,7 @@ public class CreateDocumentArgs extends IndexDocumentArgs<CreateDocumentArgs> {
     }
 
     @Override
-    protected CreateDocumentArgs self() {
+    protected FileIndexDocumentArgs self() {
         return this;
     }
 }

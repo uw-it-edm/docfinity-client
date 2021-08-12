@@ -52,7 +52,7 @@ public class DocFinityClient {
     *
     * @param args Class that encapsulates arguments for create document operation.
     */
-    public IndexDocumentResult uploadIndexAndCommitDocument(CreateDocumentArgs args)
+    public IndexDocumentResult uploadIndexAndCommitDocument(FileIndexDocumentArgs args)
             throws Exception {
         Preconditions.checkNotNull(args, "args is required.");
         args.validate();
@@ -66,8 +66,8 @@ public class DocFinityClient {
         log.info("File uploaded, document id: {}", documentId);
 
         try {
-            UpdateDocumentArgs updateArgs =
-                    new UpdateDocumentArgs(documentId, args.getCategoryName(), args.getDocumentTypeName());
+            IndexDocumentArgs updateArgs =
+                    new IndexDocumentArgs(documentId, args.getCategoryName(), args.getDocumentTypeName());
             updateArgs.setMetadata(args.getMetadata());
 
             return this.indexAndCommitInternal(documentTypeId, updateArgs);
@@ -83,7 +83,7 @@ public class DocFinityClient {
     *
     * @param args Class that encapsulates arguments for index document operation.
     */
-    public IndexDocumentResult indexAndCommitDocument(UpdateDocumentArgs args) throws Exception {
+    public IndexDocumentResult indexAndCommitDocument(IndexDocumentArgs args) throws Exception {
         Preconditions.checkNotNull(args, "args is required.");
         args.validate();
 
@@ -94,12 +94,7 @@ public class DocFinityClient {
         return indexAndCommitInternal(documentTypeId, args);
     }
 
-    /**
-    * Indexes and commits a document to DocFinity.
-    *
-    * @param args Class that encapsulates arguments for index document operation.
-    */
-    private IndexDocumentResult indexAndCommitInternal(String documentTypeId, UpdateDocumentArgs args)
+    private IndexDocumentResult indexAndCommitInternal(String documentTypeId, IndexDocumentArgs args)
             throws Exception {
         Preconditions.checkNotNull(args, "args is required.");
         args.validate();
@@ -137,9 +132,9 @@ public class DocFinityClient {
     /**
     * Reindexes a document to DocFinity.
     *
-    * @param args Class that encapsulates arguments for update document operation.
+    * @param args Class that encapsulates arguments for reindex document operation.
     */
-    public IndexDocumentResult reindexDocument(UpdateDocumentArgs args) throws Exception {
+    public IndexDocumentResult reindexDocument(IndexDocumentArgs args) throws Exception {
         Preconditions.checkNotNull(args, "args is required.");
         args.validate();
 
@@ -195,7 +190,7 @@ public class DocFinityClient {
         return metadata.stream().collect(Collectors.toMap(MetadataDTO::getName, m -> m));
     }
 
-    private String uploadFile(CreateDocumentArgs args) throws IOException {
+    private String uploadFile(FileIndexDocumentArgs args) throws IOException {
         String documentId;
         if (args.getFile() != null) {
             documentId = this.service.uploadDocument(args.getFile());
