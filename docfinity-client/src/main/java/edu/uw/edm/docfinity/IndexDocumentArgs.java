@@ -28,6 +28,13 @@ public abstract class IndexDocumentArgs<T extends IndexDocumentArgs<T>> {
     private Multimap<String, Object> metadata = ArrayListMultimap.create();
 
     /**
+    * TODO: comments
+    *
+    * @return
+    */
+    protected abstract T self();
+
+    /**
     * Loads metadata from a map of single values.
     *
     * @param fieldsMap Map of metadata object names with their value to load.
@@ -51,6 +58,7 @@ public abstract class IndexDocumentArgs<T extends IndexDocumentArgs<T>> {
         for (DocumentField field : fields) {
             if (metadata.containsKey(field.getName())) {
                 // TODO: Add error and test
+                this.throwDuplicateFieldException(field.getName());
             }
 
             metadata.putAll(field.getName(), field.getValues());
@@ -59,12 +67,15 @@ public abstract class IndexDocumentArgs<T extends IndexDocumentArgs<T>> {
         return self();
     }
 
-    protected abstract T self();
-
     /** Checks the values of all properties are valid. */
     public void validate() {
         Preconditions.checkNotNull(categoryName, "categoryName is required.");
         Preconditions.checkNotNull(documentTypeName, "documentTypeName is required.");
         Preconditions.checkNotNull(metadata, "metadata is required.");
+    }
+
+    private void throwDuplicateFieldException(String fieldName) {
+        throw new IllegalStateException(
+                String.format("Duplicate field '%s' in indexing metadata values.", fieldName));
     }
 }

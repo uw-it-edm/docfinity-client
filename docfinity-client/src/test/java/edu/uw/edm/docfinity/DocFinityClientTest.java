@@ -90,8 +90,7 @@ public class DocFinityClientTest {
                 new CreateDocumentArgs("category", "documentType")
                         .withFile(testFile)
                         .withMetadata(
-                                Arrays.asList(
-                                        new DocumentField("Field", "Value1"), new DocumentField("Field", "Value2")));
+                                Arrays.asList(new DocumentField("Field", Arrays.asList("Value1", "Value2"))));
 
         DocumentIndexingDTO result = client.createDocument(args);
 
@@ -447,8 +446,7 @@ public class DocFinityClientTest {
                 new CreateDocumentArgs("category", "documentType")
                         .withFile(testFile)
                         .withMetadata(
-                                Arrays.asList(
-                                        new DocumentField("Field", "Value1"), new DocumentField("Field", "Value2")));
+                                Arrays.asList(new DocumentField("Field", Arrays.asList("Value1", "Value2"))));
 
         IllegalStateException thrown =
                 assertThrows(IllegalStateException.class, () -> client.createDocument(args));

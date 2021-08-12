@@ -36,10 +36,10 @@ public class IndexingMetadataBuilder {
     }
 
     /** Adds an indexing field entry. */
-    public IndexingMetadataBuilder addValue(DocFinityDocumentField field) {
-        Multimap<String, Object> tempMap = ArrayListMultimap.create();
-        tempMap.put(field.getMetadataName(), field.getValue());
-        return addValues(tempMap);
+    public IndexingMetadataBuilder addValue(DocumentField field) {
+        Multimap<String, Object> map = ArrayListMultimap.create();
+        map.putAll(field.getName(), field.getValues());
+        return addValues(map);
     }
 
     /** Adds multiple indexing field entries. */
