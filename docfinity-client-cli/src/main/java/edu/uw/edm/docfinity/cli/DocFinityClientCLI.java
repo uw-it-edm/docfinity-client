@@ -117,13 +117,13 @@ public class DocFinityClientCLI {
                     new CreateDocumentArgs(cli.category, cli.documentType)
                             .withFile(file)
                             .withMetadata(metadata);
-            DocumentIndexingDTO result = client.createDocument(args);
+            DocumentIndexingDTO result = client.uploadIndexAndCommitDocument(args);
             cliLogger.info("Result: {}", mapper.writeValueAsString(result));
         } else {
             UpdateDocumentArgs args =
                     new UpdateDocumentArgs(cli.documentId, cli.category, cli.documentType)
                             .withMetadata(metadata);
-            DocumentIndexingDTO result = client.updateDocument(args);
+            DocumentIndexingDTO result = client.reindexDocument(args);
             cliLogger.info("Result: {}", mapper.writeValueAsString(result));
         }
     }

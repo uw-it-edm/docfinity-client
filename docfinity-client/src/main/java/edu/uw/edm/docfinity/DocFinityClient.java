@@ -52,7 +52,8 @@ public class DocFinityClient {
     *
     * @param args Class that encapsulates arguments for create document operation.
     */
-    public DocumentIndexingDTO createDocument(CreateDocumentArgs args) throws Exception {
+    public DocumentIndexingDTO uploadIndexAndCommitDocument(CreateDocumentArgs args)
+            throws Exception {
         Preconditions.checkNotNull(args, "args is required.");
         args.validate();
 
@@ -100,7 +101,7 @@ public class DocFinityClient {
     *
     * @param args Class that encapsulates arguments for update document operation.
     */
-    public DocumentIndexingDTO updateDocument(UpdateDocumentArgs args) throws Exception {
+    public DocumentIndexingDTO reindexDocument(UpdateDocumentArgs args) throws Exception {
         Preconditions.checkNotNull(args, "args is required.");
         args.validate();
 

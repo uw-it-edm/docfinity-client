@@ -92,7 +92,7 @@ public class DocFinityClientTest {
                         .withMetadata(
                                 Arrays.asList(new DocumentField("Field", Arrays.asList("Value1", "Value2"))));
 
-        DocumentIndexingDTO result = client.createDocument(args);
+        DocumentIndexingDTO result = client.uploadIndexAndCommitDocument(args);
 
         // assert
         assertEquals(2, result.getIndexingMetadata().size());
@@ -112,7 +112,7 @@ public class DocFinityClientTest {
         // act
         CreateDocumentArgs args = buildCreateArgs("Field1", null);
         IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
+                assertThrows(IllegalStateException.class, () -> client.uploadIndexAndCommitDocument(args));
 
         // assert
         assertEquals(
@@ -131,7 +131,7 @@ public class DocFinityClientTest {
         // act
         CreateDocumentArgs args = buildCreateArgs("Field1", null);
         IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
+                assertThrows(IllegalStateException.class, () -> client.uploadIndexAndCommitDocument(args));
 
         // assert
         assertEquals(
@@ -150,7 +150,7 @@ public class DocFinityClientTest {
         // act
         CreateDocumentArgs args = buildCreateArgs("Field1", "");
         IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
+                assertThrows(IllegalStateException.class, () -> client.uploadIndexAndCommitDocument(args));
 
         // assert
         assertEquals(
@@ -170,7 +170,7 @@ public class DocFinityClientTest {
         // act
         CreateDocumentArgs args = buildCreateArgs("Field1", "User Value");
         IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
+                assertThrows(IllegalStateException.class, () -> client.uploadIndexAndCommitDocument(args));
 
         // assert
         assertEquals(
@@ -187,7 +187,7 @@ public class DocFinityClientTest {
 
         // act
         CreateDocumentArgs args = buildCreateArgs("Field1", "Value1");
-        assertThrows(Exception.class, () -> client.createDocument(args));
+        assertThrows(Exception.class, () -> client.uploadIndexAndCommitDocument(args));
 
         // assert
         verify(mockService).deleteDocuments(testDocumentId);
@@ -207,7 +207,7 @@ public class DocFinityClientTest {
 
         // act
         UpdateDocumentArgs args = buildUpdateArgs("Field", "NewValue");
-        DocumentIndexingDTO result = client.updateDocument(args);
+        DocumentIndexingDTO result = client.reindexDocument(args);
 
         // assert
         assertEquals(3, result.getIndexingMetadata().size());
@@ -241,7 +241,7 @@ public class DocFinityClientTest {
 
         // act
         UpdateDocumentArgs args = buildUpdateArgs("Field", null);
-        DocumentIndexingDTO result = client.updateDocument(args);
+        DocumentIndexingDTO result = client.reindexDocument(args);
 
         // assert
         assertEquals(3, result.getIndexingMetadata().size());
@@ -278,7 +278,7 @@ public class DocFinityClientTest {
 
         // act
         UpdateDocumentArgs args = buildUpdateArgs("Parent Field", "User Value");
-        DocumentIndexingDTO result = client.updateDocument(args);
+        DocumentIndexingDTO result = client.reindexDocument(args);
 
         // assert
         assertNotNull(result);
@@ -300,7 +300,7 @@ public class DocFinityClientTest {
 
         // act
         UpdateDocumentArgs args = buildUpdateArgs("Field", null);
-        DocumentIndexingDTO result = client.updateDocument(args);
+        DocumentIndexingDTO result = client.reindexDocument(args);
 
         // assert
         assertNotNull(result);
@@ -322,7 +322,7 @@ public class DocFinityClientTest {
 
         // act
         UpdateDocumentArgs args = buildUpdateArgs("Field", "");
-        DocumentIndexingDTO result = client.updateDocument(args);
+        DocumentIndexingDTO result = client.reindexDocument(args);
 
         // assert
         assertNotNull(result);
@@ -343,7 +343,7 @@ public class DocFinityClientTest {
         // act
         UpdateDocumentArgs args = buildUpdateArgs("Field1", null);
         IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
+                assertThrows(IllegalStateException.class, () -> client.reindexDocument(args));
 
         // assert
         assertEquals(
@@ -362,7 +362,7 @@ public class DocFinityClientTest {
         // act
         UpdateDocumentArgs args = buildUpdateArgs("Field1", null);
         IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
+                assertThrows(IllegalStateException.class, () -> client.reindexDocument(args));
 
         // assert
         assertEquals(
@@ -381,7 +381,7 @@ public class DocFinityClientTest {
         // act
         UpdateDocumentArgs args = buildUpdateArgs("Field1", "");
         IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
+                assertThrows(IllegalStateException.class, () -> client.reindexDocument(args));
 
         // assert
         assertEquals(
@@ -408,7 +408,7 @@ public class DocFinityClientTest {
                 new UpdateDocumentArgs(testDocumentId, "category", "documentType")
                         .withMetadata(
                                 ImmutableMap.of("Parent Field", "Parent Value", "Child Field", "Child Value"));
-        DocumentIndexingDTO result = client.updateDocument(args);
+        DocumentIndexingDTO result = client.reindexDocument(args);
 
         // assert
         List<Object> values =
@@ -428,7 +428,7 @@ public class DocFinityClientTest {
         // act
         UpdateDocumentArgs args = buildUpdateArgs("Field1", 100.10);
         IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
+                assertThrows(IllegalStateException.class, () -> client.reindexDocument(args));
 
         // assert
         assertThat(
@@ -449,7 +449,7 @@ public class DocFinityClientTest {
                                 Arrays.asList(new DocumentField("Field", Arrays.asList("Value1", "Value2"))));
 
         IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
+                assertThrows(IllegalStateException.class, () -> client.uploadIndexAndCommitDocument(args));
 
         // assert
         assertEquals(
@@ -466,7 +466,7 @@ public class DocFinityClientTest {
         // act
         CreateDocumentArgs args = buildCreateArgs("Field1", "Value1");
         IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
+                assertThrows(IllegalStateException.class, () -> client.uploadIndexAndCommitDocument(args));
 
         // assert
         assertEquals(
@@ -484,7 +484,7 @@ public class DocFinityClientTest {
         // act
         CreateDocumentArgs args = buildCreateArgs("Field1", "Value1");
         IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.createDocument(args));
+                assertThrows(IllegalStateException.class, () -> client.uploadIndexAndCommitDocument(args));
 
         // assert
         assertEquals(
@@ -501,7 +501,7 @@ public class DocFinityClientTest {
         // act
         UpdateDocumentArgs args = buildUpdateArgs("Field2", "User Value");
         IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
+                assertThrows(IllegalStateException.class, () -> client.reindexDocument(args));
 
         // assert
         assertThat(
@@ -526,7 +526,7 @@ public class DocFinityClientTest {
         // act
         UpdateDocumentArgs args = buildUpdateArgs("Parent Field", "User Value");
         IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
+                assertThrows(IllegalStateException.class, () -> client.reindexDocument(args));
 
         // assert
         assertThat(
@@ -558,7 +558,7 @@ public class DocFinityClientTest {
         // act
         UpdateDocumentArgs args = buildUpdateArgs("First Parent Field", "User Value");
         IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
+                assertThrows(IllegalStateException.class, () -> client.reindexDocument(args));
 
         // assert
         assertThat(
@@ -586,7 +586,7 @@ public class DocFinityClientTest {
         // act
         UpdateDocumentArgs args = buildUpdateArgs("Parent Field", "User Value");
         IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> client.updateDocument(args));
+                assertThrows(IllegalStateException.class, () -> client.reindexDocument(args));
 
         // assert
         assertThat(
