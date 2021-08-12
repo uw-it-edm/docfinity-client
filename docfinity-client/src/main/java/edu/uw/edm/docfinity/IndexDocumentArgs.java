@@ -34,6 +34,12 @@ public abstract class IndexDocumentArgs<T extends IndexDocumentArgs<T>> {
     */
     protected abstract T self();
 
+    public static <B extends IndexDocumentArgs<B>, E extends IndexDocumentArgs<E>> B from(
+            IndexDocumentArgs<E> args) {
+
+        return null;
+    }
+
     /**
     * Loads metadata from a map of single values.
     *
