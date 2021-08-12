@@ -10,8 +10,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class IndexDocumentResult {
     private final String id;
-    private final String documentType;
-    private final String category;
+    private String category;
+    private String documentType;
     private List<DocumentField> metadata;
     private DocumentIndexingDTO indexingDto;
 }

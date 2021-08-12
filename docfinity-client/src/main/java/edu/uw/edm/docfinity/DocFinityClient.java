@@ -1,11 +1,14 @@
 package edu.uw.edm.docfinity;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
 import edu.uw.edm.docfinity.models.DocumentIndexingMetadataDTO;
 import edu.uw.edm.docfinity.models.DocumentTypeDTOSearchResult;
 import edu.uw.edm.docfinity.models.MetadataDTO;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -126,7 +129,7 @@ public class DocFinityClient {
 
         DocumentIndexingDTO indexedDto =
                 this.service.indexDocuments(indexingDto).stream().findFirst().get();
-        return buildIndexResult(indexedDto);
+        return buildIndexResult(args, indexedDto);
     }
 
     /**
@@ -173,12 +176,29 @@ public class DocFinityClient {
 
         DocumentIndexingDTO indexedDTO =
                 this.service.reindexDocuments(indexingDto).stream().findFirst().get();
-        return buildIndexResult(indexedDTO);
+        return buildIndexResult(args, indexedDTO);
     }
 
-    private IndexDocumentResult buildIndexResult(DocumentIndexingDTO indexingDto) {
-        IndexDocumentResult result = new IndexDocumentResult(null, null, null);
+    private IndexDocumentResult buildIndexResult(
+            IndexDocumentArgsBase<?> args, DocumentIndexingDTO indexingDto) {
+        IndexDocumentResult result = new IndexDocumentResult(indexingDto.getDocumentId());
+        result.setCategory(args.getCategoryName());
+        result.setDocumentType(args.getDocumentTypeName());
         result.setIndexingDto(indexingDto);
+
+        Multimap<String, Object> fieldsMap = ArrayListMultimap.create();
+        for (DocumentIndexingMetadataDTO metadataDto : indexingDto.getIndexingMetadata()) {
+            fieldsMap.put(metadataDto.getMetadataName(), metadataDto.getValue());
+        }
+
+        // TODO: handle and test case where the indexing value is null
+        List<DocumentField> fields =
+                fieldsMap.asMap().entrySet().stream()
+                        .map(e -> new DocumentField(e.getKey(), new ArrayList<>(e.getValue())))
+                        .collect(Collectors.toList());
+
+        result.setMetadata(fields);
+
         return result;
     }
 

@@ -17,13 +17,13 @@ public class DocumentField {
     private List<Object> values;
 
     /**
-    * TODO: comments.
+    * TODO: comments
     *
     * @param name
     * @param value
+    * @return
     */
-    public DocumentField(String name, Object value) {
-        this.name = name;
-        this.values = Arrays.asList(value);
+    public static DocumentField fromValue(String name, Object value) {
+        return new DocumentField(name, Arrays.asList(value));
     }
 }

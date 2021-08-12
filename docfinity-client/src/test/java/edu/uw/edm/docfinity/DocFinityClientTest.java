@@ -65,13 +65,13 @@ public class DocFinityClientTest {
     }
 
     private IndexDocumentArgs buildUpdateArgs(String fieldName, Object fieldValue) {
-        DocumentField field = new DocumentField(fieldName, fieldValue);
+        DocumentField field = DocumentField.fromValue(fieldName, fieldValue);
         return new IndexDocumentArgs(testDocumentId, "category", "documentType")
                 .withMetadata(Arrays.asList(field));
     }
 
     private FileIndexDocumentArgs buildCreateArgs(String fieldName, Object fieldValue) {
-        DocumentField field = new DocumentField(fieldName, fieldValue);
+        DocumentField field = DocumentField.fromValue(fieldName, fieldValue);
         return new FileIndexDocumentArgs("category", "documentType")
                 .withFile(testFile)
                 .withMetadata(Arrays.asList(field));
@@ -92,12 +92,17 @@ public class DocFinityClientTest {
                         .withMetadata(
                                 Arrays.asList(new DocumentField("Field", Arrays.asList("Value1", "Value2"))));
 
-        DocumentIndexingDTO result = client.uploadIndexAndCommitDocument(args).getIndexingDto();
+        IndexDocumentResult result = client.uploadIndexAndCommitDocument(args);
+        DocumentIndexingDTO indexingDto = result.getIndexingDto();
 
         // assert
-        assertEquals(2, result.getIndexingMetadata().size());
-        assertEquals("Value1", result.getIndexingMetadata().get(0).getValue());
-        assertEquals("Value2", result.getIndexingMetadata().get(1).getValue());
+        assertEquals(2, indexingDto.getIndexingMetadata().size());
+        assertEquals("Value1", indexingDto.getIndexingMetadata().get(0).getValue());
+        assertEquals("Value2", indexingDto.getIndexingMetadata().get(1).getValue());
+
+        assertEquals(1, result.getMetadata().size());
+        assertEquals("Field", result.getMetadata().get(0).getName());
+        assertThat(result.getMetadata().get(0).getValues(), is(Arrays.asList("Value1", "Value2")));
     }
 
     @Test
