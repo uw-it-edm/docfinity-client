@@ -7,9 +7,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import edu.uw.edm.docfinity.CreateDocumentArgs;
 import edu.uw.edm.docfinity.DocFinityClient;
-import edu.uw.edm.docfinity.DocFinityDocumentField;
 import edu.uw.edm.docfinity.DocFinityServiceImpl;
-import edu.uw.edm.docfinity.UpdateDocumentArgs;
+import edu.uw.edm.docfinity.DocumentField;
+import edu.uw.edm.docfinity.IndexDocumentArgs;
 import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
 import java.io.File;
 import java.net.URL;
@@ -102,7 +102,7 @@ public class DocFinityClientCLI {
         File file = getFile(cli);
 
         // Load metadata from json
-        List<DocFinityDocumentField> metadata = loadMetadata(cli);
+        List<DocumentField> metadata = loadMetadata(cli);
 
         // Setup logging for request/responses.
         setupRequestTracing(cli);
@@ -114,14 +114,13 @@ public class DocFinityClientCLI {
 
         if (cli.action == ActionEnum.create) {
             CreateDocumentArgs args =
-                    new CreateDocumentArgs(cli.category, cli.documentType)
-                            .withFile(file)
-                            .withMetadata(metadata);
+                    new CreateDocumentArgs(cli.category, cli.documentType).withFile(file);
+            // TODO:  .withMetadata(metadata);
             DocumentIndexingDTO result = client.createDocument(args);
             cliLogger.info("Result: {}", mapper.writeValueAsString(result));
         } else {
-            UpdateDocumentArgs args =
-                    new UpdateDocumentArgs(cli.documentId, cli.category, cli.documentType)
+            IndexDocumentArgs args =
+                    new IndexDocumentArgs(cli.documentId, cli.category, cli.documentType)
                             .withMetadata(metadata);
             DocumentIndexingDTO result = client.updateDocument(args);
             cliLogger.info("Result: {}", mapper.writeValueAsString(result));
@@ -149,14 +148,13 @@ public class DocFinityClientCLI {
         return file;
     }
 
-    private static List<DocFinityDocumentField> loadMetadata(DocFinityClientCLI cli)
-            throws Exception {
+    private static List<DocumentField> loadMetadata(DocFinityClientCLI cli) throws Exception {
         String metadataJson = cli.metadataJson;
         if (cli.metadataFilePath != null) {
             metadataJson = new String(Files.readAllBytes(Paths.get(cli.metadataFilePath)));
         }
 
         ObjectMapper mapper = new ObjectMapper();
-        return Arrays.asList(mapper.readValue(metadataJson, DocFinityDocumentField[].class));
+        return Arrays.asList(mapper.readValue(metadataJson, DocumentField[].class));
     }
 }

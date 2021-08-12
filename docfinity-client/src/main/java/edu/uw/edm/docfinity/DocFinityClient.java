@@ -100,7 +100,7 @@ public class DocFinityClient {
     *
     * @param args Class that encapsulates arguments for update document operation.
     */
-    public DocumentIndexingDTO updateDocument(UpdateDocumentArgs args) throws Exception {
+    public DocumentIndexingDTO updateDocument(IndexDocumentArgs args) throws Exception {
         Preconditions.checkNotNull(args, "args is required.");
         args.validate();
 

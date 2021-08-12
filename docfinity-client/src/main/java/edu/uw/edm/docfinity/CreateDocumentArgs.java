@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 @Data
 @RequiredArgsConstructor
 @AllArgsConstructor
-public class CreateDocumentArgs implements IndexDocumentArgs {
+public class CreateDocumentArgs {
     /** File to upload. */
     private File file;
 
