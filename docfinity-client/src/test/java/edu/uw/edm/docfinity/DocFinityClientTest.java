@@ -92,7 +92,7 @@ public class DocFinityClientTest {
                         .withMetadata(
                                 Arrays.asList(new DocumentField("Field", Arrays.asList("Value1", "Value2"))));
 
-        DocumentIndexingDTO result = client.uploadIndexAndCommitDocument(args);
+        DocumentIndexingDTO result = client.uploadIndexAndCommitDocument(args).getIndexingDto();
 
         // assert
         assertEquals(2, result.getIndexingMetadata().size());
@@ -207,7 +207,7 @@ public class DocFinityClientTest {
 
         // act
         UpdateDocumentArgs args = buildUpdateArgs("Field", "NewValue");
-        DocumentIndexingDTO result = client.reindexDocument(args);
+        DocumentIndexingDTO result = client.reindexDocument(args).getIndexingDto();
 
         // assert
         assertEquals(3, result.getIndexingMetadata().size());
@@ -241,7 +241,7 @@ public class DocFinityClientTest {
 
         // act
         UpdateDocumentArgs args = buildUpdateArgs("Field", null);
-        DocumentIndexingDTO result = client.reindexDocument(args);
+        DocumentIndexingDTO result = client.reindexDocument(args).getIndexingDto();
 
         // assert
         assertEquals(3, result.getIndexingMetadata().size());
@@ -278,7 +278,7 @@ public class DocFinityClientTest {
 
         // act
         UpdateDocumentArgs args = buildUpdateArgs("Parent Field", "User Value");
-        DocumentIndexingDTO result = client.reindexDocument(args);
+        DocumentIndexingDTO result = client.reindexDocument(args).getIndexingDto();
 
         // assert
         assertNotNull(result);
@@ -300,7 +300,7 @@ public class DocFinityClientTest {
 
         // act
         UpdateDocumentArgs args = buildUpdateArgs("Field", null);
-        DocumentIndexingDTO result = client.reindexDocument(args);
+        DocumentIndexingDTO result = client.reindexDocument(args).getIndexingDto();
 
         // assert
         assertNotNull(result);
@@ -322,7 +322,7 @@ public class DocFinityClientTest {
 
         // act
         UpdateDocumentArgs args = buildUpdateArgs("Field", "");
-        DocumentIndexingDTO result = client.reindexDocument(args);
+        DocumentIndexingDTO result = client.reindexDocument(args).getIndexingDto();
 
         // assert
         assertNotNull(result);
@@ -408,7 +408,7 @@ public class DocFinityClientTest {
                 new UpdateDocumentArgs(testDocumentId, "category", "documentType")
                         .withMetadata(
                                 ImmutableMap.of("Parent Field", "Parent Value", "Child Field", "Child Value"));
-        DocumentIndexingDTO result = client.reindexDocument(args);
+        DocumentIndexingDTO result = client.reindexDocument(args).getIndexingDto();
 
         // assert
         List<Object> values =

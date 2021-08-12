@@ -52,7 +52,7 @@ public class DocFinityClient {
     *
     * @param args Class that encapsulates arguments for create document operation.
     */
-    public DocumentIndexingDTO uploadIndexAndCommitDocument(CreateDocumentArgs args)
+    public IndexDocumentResult uploadIndexAndCommitDocument(CreateDocumentArgs args)
             throws Exception {
         Preconditions.checkNotNull(args, "args is required.");
         args.validate();
@@ -83,7 +83,7 @@ public class DocFinityClient {
     *
     * @param args Class that encapsulates arguments for index document operation.
     */
-    public DocumentIndexingDTO indexAndCommitDocument(UpdateDocumentArgs args) throws Exception {
+    public IndexDocumentResult indexAndCommitDocument(UpdateDocumentArgs args) throws Exception {
         Preconditions.checkNotNull(args, "args is required.");
         args.validate();
 
@@ -99,7 +99,7 @@ public class DocFinityClient {
     *
     * @param args Class that encapsulates arguments for index document operation.
     */
-    private DocumentIndexingDTO indexAndCommitInternal(String documentTypeId, UpdateDocumentArgs args)
+    private IndexDocumentResult indexAndCommitInternal(String documentTypeId, UpdateDocumentArgs args)
             throws Exception {
         Preconditions.checkNotNull(args, "args is required.");
         args.validate();
@@ -128,7 +128,10 @@ public class DocFinityClient {
         List<DocumentIndexingMetadataDTO> indexingDtos = builder.build();
         DocumentIndexingDTO indexingDto =
                 new DocumentIndexingDTO(documentTypeId, documentId, indexingDtos);
-        return this.service.indexDocuments(indexingDto).stream().findFirst().get();
+
+        DocumentIndexingDTO indexedDto =
+                this.service.indexDocuments(indexingDto).stream().findFirst().get();
+        return buildIndexResult(indexedDto);
     }
 
     /**
@@ -136,7 +139,7 @@ public class DocFinityClient {
     *
     * @param args Class that encapsulates arguments for update document operation.
     */
-    public DocumentIndexingDTO reindexDocument(UpdateDocumentArgs args) throws Exception {
+    public IndexDocumentResult reindexDocument(UpdateDocumentArgs args) throws Exception {
         Preconditions.checkNotNull(args, "args is required.");
         args.validate();
 
@@ -172,7 +175,16 @@ public class DocFinityClient {
         DocumentIndexingDTO indexingDto =
                 new DocumentIndexingDTO(documentTypeId, documentId, indexingDtos);
         indexingDto.setMetadataLoaded(true); // treat this as a partial reindex
-        return this.service.reindexDocuments(indexingDto).stream().findFirst().get();
+
+        DocumentIndexingDTO indexedDTO =
+                this.service.reindexDocuments(indexingDto).stream().findFirst().get();
+        return buildIndexResult(indexedDTO);
+    }
+
+    private IndexDocumentResult buildIndexResult(DocumentIndexingDTO indexingDto) {
+        IndexDocumentResult result = new IndexDocumentResult(null, null, null);
+        result.setIndexingDto(indexingDto);
+        return result;
     }
 
     private Map<String, MetadataDTO> getDocumentMetadataMap(String documentTypeId, String documentId)

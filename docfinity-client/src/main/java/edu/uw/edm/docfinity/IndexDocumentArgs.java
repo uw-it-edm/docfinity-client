@@ -63,9 +63,11 @@ public abstract class IndexDocumentArgs<T extends IndexDocumentArgs<T>> {
     public T withMetadata(List<DocumentField> fields) {
         for (DocumentField field : fields) {
             if (metadata.containsKey(field.getName())) {
-                // TODO: Add error and test
+                // TODO: Add test
                 this.throwDuplicateFieldException(field.getName());
             }
+
+            // TODO: Check for special cases: null, [], [null], [""]
 
             metadata.putAll(field.getName(), field.getValues());
         }

@@ -9,8 +9,8 @@ import edu.uw.edm.docfinity.CreateDocumentArgs;
 import edu.uw.edm.docfinity.DocFinityClient;
 import edu.uw.edm.docfinity.DocFinityServiceImpl;
 import edu.uw.edm.docfinity.DocumentField;
+import edu.uw.edm.docfinity.IndexDocumentResult;
 import edu.uw.edm.docfinity.UpdateDocumentArgs;
-import edu.uw.edm.docfinity.models.DocumentIndexingDTO;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
@@ -117,14 +117,14 @@ public class DocFinityClientCLI {
                     new CreateDocumentArgs(cli.category, cli.documentType)
                             .withFile(file)
                             .withMetadata(metadata);
-            DocumentIndexingDTO result = client.uploadIndexAndCommitDocument(args);
-            cliLogger.info("Result: {}", mapper.writeValueAsString(result));
+            IndexDocumentResult result = client.uploadIndexAndCommitDocument(args);
+            cliLogger.info("Result: {}", mapper.writeValueAsString(result.getIndexingDto()));
         } else {
             UpdateDocumentArgs args =
                     new UpdateDocumentArgs(cli.documentId, cli.category, cli.documentType)
                             .withMetadata(metadata);
-            DocumentIndexingDTO result = client.reindexDocument(args);
-            cliLogger.info("Result: {}", mapper.writeValueAsString(result));
+            IndexDocumentResult result = client.reindexDocument(args);
+            cliLogger.info("Result: {}", mapper.writeValueAsString(result.getIndexingDto()));
         }
     }
 
