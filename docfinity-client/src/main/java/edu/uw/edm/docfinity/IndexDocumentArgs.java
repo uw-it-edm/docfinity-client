@@ -13,10 +13,7 @@ import lombok.RequiredArgsConstructor;
 
 @Data
 @RequiredArgsConstructor
-public class IndexDocumentArgs {
-    /** Identifier of document to index. */
-    private final String documentId;
-
+public abstract class IndexDocumentArgs<T extends IndexDocumentArgs<T>> {
     /** Category name to index document. */
     private final String categoryName;
 
@@ -35,7 +32,7 @@ public class IndexDocumentArgs {
     *
     * @param fieldsMap Map of metadata object names with their value to load.
     */
-    public IndexDocumentArgs withMetadata(Map<String, Object> fieldsMap) {
+    public T withMetadata(Map<String, Object> fieldsMap) {
         List<DocumentField> fields = new ArrayList<>();
 
         for (Entry<String, Object> field : fieldsMap.entrySet()) {
@@ -50,7 +47,7 @@ public class IndexDocumentArgs {
     *
     * @param fields List of field objects with names and values to load.
     */
-    public IndexDocumentArgs withMetadata(List<DocumentField> fields) {
+    public T withMetadata(List<DocumentField> fields) {
         for (DocumentField field : fields) {
             if (metadata.containsKey(field.getName())) {
                 // TODO: Add error and test
@@ -59,12 +56,13 @@ public class IndexDocumentArgs {
             metadata.putAll(field.getName(), field.getValues());
         }
 
-        return this;
+        return self();
     }
+
+    protected abstract T self();
 
     /** Checks the values of all properties are valid. */
     public void validate() {
-        Preconditions.checkNotNull(documentId, "documentId is required.");
         Preconditions.checkNotNull(categoryName, "categoryName is required.");
         Preconditions.checkNotNull(documentTypeName, "documentTypeName is required.");
         Preconditions.checkNotNull(metadata, "metadata is required.");
