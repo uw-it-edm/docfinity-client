@@ -7,8 +7,7 @@ public class IndexDocumentArgs extends IndexDocumentArgsBase<IndexDocumentArgs> 
     /** Identifier of document to index. */
     @Getter private final String documentId;
 
-    public IndexDocumentArgs(String documentId, String categoryName, String documentTypeName) {
-        super(categoryName, documentTypeName);
+    public IndexDocumentArgs(String documentId) {
         this.documentId = documentId;
     }
 

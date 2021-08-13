@@ -61,7 +61,7 @@ public class DocFinityClient {
         args.validate();
 
         // 1. Get the document type id from the category and document names.
-        String documentTypeId = getDocumentTypeId(args.getCategoryName(), args.getDocumentTypeName());
+        String documentTypeId = getDocumentTypeId(args.getCategory(), args.getDocumentType());
         log.info("Retrieved document type id: {}", documentTypeId);
 
         // 2. Upload file.
@@ -70,7 +70,8 @@ public class DocFinityClient {
 
         try {
             IndexDocumentArgs updateArgs =
-                    new IndexDocumentArgs(documentId, args.getCategoryName(), args.getDocumentTypeName());
+                    new IndexDocumentArgs(documentId)
+                            .withDocumentType(args.getCategory(), args.getDocumentType());
             updateArgs.setMetadata(args.getMetadata());
 
             return this.indexAndCommitInternal(documentTypeId, updateArgs);
@@ -91,7 +92,7 @@ public class DocFinityClient {
         args.validate();
 
         // Get the document type id from the category and document names.
-        String documentTypeId = getDocumentTypeId(args.getCategoryName(), args.getDocumentTypeName());
+        String documentTypeId = getDocumentTypeId(args.getCategory(), args.getDocumentType());
         log.info("Retrieved document type id: {}", documentTypeId);
 
         return indexAndCommitInternal(documentTypeId, args);
@@ -107,7 +108,7 @@ public class DocFinityClient {
         // 1. Get all metadata prompts and validate inputs
         Map<String, MetadataDTO> metadata = getDocumentMetadataMap(documentTypeId, documentId);
         IndexingMetadataBuilder builder =
-                new IndexingMetadataBuilder(args.getDocumentTypeName(), metadata, Arrays.asList())
+                new IndexingMetadataBuilder(args.getDocumentType(), metadata, Arrays.asList())
                         .addValues(args.getMetadata());
 
         // 2. Execute datasources.
@@ -115,8 +116,8 @@ public class DocFinityClient {
         ExecuteDatasourceArgs executeArgs = new ExecuteDatasourceArgs();
         executeArgs.setDocumentId(documentId);
         executeArgs.setDocumentTypeId(documentTypeId);
-        executeArgs.setDocumentTypeName(args.getDocumentTypeName());
-        executeArgs.setCategory(args.getCategoryName());
+        executeArgs.setDocumentTypeName(args.getDocumentType());
+        executeArgs.setCategory(args.getCategory());
         executeArgs.setClientFields(args.getMetadata());
         executeArgs.setMetadataMap(metadata);
         executor.executeDatasources(executeArgs).stream().forEach(field -> builder.addValue(field));
@@ -144,7 +145,7 @@ public class DocFinityClient {
         String documentId = args.getDocumentId();
 
         // 1. Get the document type id from the category and document names.
-        String documentTypeId = getDocumentTypeId(args.getCategoryName(), args.getDocumentTypeName());
+        String documentTypeId = getDocumentTypeId(args.getCategory(), args.getDocumentType());
         log.info("Retrieved document type id: {}", documentTypeId);
 
         // 2. Get all metadata prompts and validate inputs
@@ -153,7 +154,7 @@ public class DocFinityClient {
 
         IndexingMetadataBuilder builder =
                 new IndexingMetadataBuilder(
-                                args.getDocumentTypeName(), metadata, indexingData.getIndexingMetadata())
+                                args.getDocumentType(), metadata, indexingData.getIndexingMetadata())
                         .addValues(args.getMetadata());
 
         // 3. Execute datasources.
@@ -161,8 +162,8 @@ public class DocFinityClient {
         ExecuteDatasourceArgs executeArgs = new ExecuteDatasourceArgs();
         executeArgs.setDocumentId(documentId);
         executeArgs.setDocumentTypeId(documentTypeId);
-        executeArgs.setDocumentTypeName(args.getDocumentTypeName());
-        executeArgs.setCategory(args.getCategoryName());
+        executeArgs.setDocumentTypeName(args.getDocumentType());
+        executeArgs.setCategory(args.getCategory());
         executeArgs.setClientFields(args.getMetadata());
         executeArgs.setMetadataMap(metadata);
         executor.executeDatasources(executeArgs).stream().forEach(field -> builder.addValue(field));
@@ -182,8 +183,8 @@ public class DocFinityClient {
     private IndexDocumentResult buildIndexResult(
             IndexDocumentArgsBase<?> args, DocumentIndexingDTO indexingDto) {
         IndexDocumentResult result = new IndexDocumentResult(indexingDto.getDocumentId());
-        result.setCategory(args.getCategoryName());
-        result.setDocumentType(args.getDocumentTypeName());
+        result.setCategory(args.getCategory());
+        result.setDocumentType(args.getDocumentType());
         result.setIndexingDto(indexingDto);
 
         Multimap<String, Object> fieldsMap = ArrayListMultimap.create();

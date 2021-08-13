@@ -114,14 +114,16 @@ public class DocFinityClientCLI {
 
         if (cli.action == ActionEnum.create) {
             FileIndexDocumentArgs args =
-                    new FileIndexDocumentArgs(cli.category, cli.documentType)
+                    new FileIndexDocumentArgs()
                             .withFile(file)
+                            .withDocumentType(cli.category, cli.documentType)
                             .withMetadata(metadata);
             IndexDocumentResult result = client.uploadIndexAndCommitDocument(args);
             cliLogger.info("Result: {}", mapper.writeValueAsString(result.getIndexingDto()));
         } else {
             IndexDocumentArgs args =
-                    new IndexDocumentArgs(cli.documentId, cli.category, cli.documentType)
+                    new IndexDocumentArgs(cli.documentId)
+                            .withDocumentType(cli.category, cli.documentType)
                             .withMetadata(metadata);
             IndexDocumentResult result = client.reindexDocument(args);
             cliLogger.info("Result: {}", mapper.writeValueAsString(result.getIndexingDto()));

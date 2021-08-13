@@ -66,13 +66,15 @@ public class DocFinityClientTest {
 
     private IndexDocumentArgs buildUpdateArgs(String fieldName, Object fieldValue) {
         DocumentField field = DocumentField.fromValue(fieldName, fieldValue);
-        return new IndexDocumentArgs(testDocumentId, "category", "documentType")
+        return new IndexDocumentArgs(testDocumentId)
+                .withDocumentType("category", "documentType")
                 .withMetadata(Arrays.asList(field));
     }
 
     private FileIndexDocumentArgs buildCreateArgs(String fieldName, Object fieldValue) {
         DocumentField field = DocumentField.fromValue(fieldName, fieldValue);
-        return new FileIndexDocumentArgs("category", "documentType")
+        return new FileIndexDocumentArgs()
+                .withDocumentType("category", "documentType")
                 .withFile(testFile)
                 .withMetadata(Arrays.asList(field));
     }
@@ -87,7 +89,8 @@ public class DocFinityClientTest {
 
         // act
         FileIndexDocumentArgs args =
-                new FileIndexDocumentArgs("category", "documentType")
+                new FileIndexDocumentArgs()
+                        .withDocumentType("category", "documentType")
                         .withFile(testFile)
                         .withMetadata(
                                 Arrays.asList(new DocumentField("Field", Arrays.asList("Value1", "Value2"))));
@@ -410,7 +413,8 @@ public class DocFinityClientTest {
 
         // act
         IndexDocumentArgs args =
-                new IndexDocumentArgs(testDocumentId, "category", "documentType")
+                new IndexDocumentArgs(testDocumentId)
+                        .withDocumentType("category", "documentType")
                         .withMetadata(
                                 ImmutableMap.of("Parent Field", "Parent Value", "Child Field", "Child Value"));
         DocumentIndexingDTO result = client.reindexDocument(args).getIndexingDto();
@@ -448,7 +452,8 @@ public class DocFinityClientTest {
 
         // act
         FileIndexDocumentArgs args =
-                new FileIndexDocumentArgs("category", "documentType")
+                new FileIndexDocumentArgs()
+                        .withDocumentType("category", "documentType")
                         .withFile(testFile)
                         .withMetadata(
                                 Arrays.asList(new DocumentField("Field", Arrays.asList("Value1", "Value2"))));

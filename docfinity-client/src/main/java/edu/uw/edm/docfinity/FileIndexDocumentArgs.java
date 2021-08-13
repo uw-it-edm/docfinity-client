@@ -16,10 +16,6 @@ public class FileIndexDocumentArgs extends IndexDocumentArgsBase<FileIndexDocume
     /** File name to upload. */
     @Getter @Setter private String fileName;
 
-    public FileIndexDocumentArgs(String categoryName, String documentTypeName) {
-        super(categoryName, documentTypeName);
-    }
-
     /**
     * Creates new arguments class with a File.
     *

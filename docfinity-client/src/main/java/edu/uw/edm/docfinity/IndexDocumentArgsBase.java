@@ -9,17 +9,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 
 /** Encapsulates data common to all indexing operations. */
 @Data
-@RequiredArgsConstructor
 public abstract class IndexDocumentArgsBase<T extends IndexDocumentArgsBase<T>> {
     /** Category name to index document. */
-    private final String categoryName;
+    private String category;
 
     /** Document type name to index document. */
-    private final String documentTypeName;
+    private String documentType;
 
     /**
     * Map of metadata object names with their value to use when indexing.
@@ -30,6 +28,19 @@ public abstract class IndexDocumentArgsBase<T extends IndexDocumentArgsBase<T>> 
 
     /** Returns a self reference. */
     protected abstract T self();
+
+    /**
+    * * TODO: comments
+    *
+    * @param category
+    * @param documentType
+    * @return
+    */
+    public T withDocumentType(String category, String documentType) {
+        this.setCategory(category);
+        this.setDocumentType(documentType);
+        return self();
+    }
 
     /**
     * Loads metadata from a map of single values.
@@ -68,8 +79,8 @@ public abstract class IndexDocumentArgsBase<T extends IndexDocumentArgsBase<T>> 
 
     /** Checks the values of all properties are valid. */
     public void validate() {
-        Preconditions.checkNotNull(categoryName, "categoryName is required.");
-        Preconditions.checkNotNull(documentTypeName, "documentTypeName is required.");
+        Preconditions.checkNotNull(category, "categoryName is required.");
+        Preconditions.checkNotNull(documentType, "documentTypeName is required.");
         Preconditions.checkNotNull(metadata, "metadata is required.");
     }
 
