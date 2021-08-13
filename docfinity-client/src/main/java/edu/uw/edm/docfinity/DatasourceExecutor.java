@@ -35,11 +35,11 @@ public class DatasourceExecutor {
     * Executes datasoures for all eligible fields based on the metadata definitions and the client
     * provided values.
     */
-    public List<DocFinityDocumentField> executeDatasources(ExecuteDatasourceArgs executeArgs)
+    public List<DocumentField> executeDatasources(ExecuteDatasourceArgs executeArgs)
             throws IOException {
         Preconditions.checkNotNull(executeArgs, "executeArgs is required.");
 
-        List<DocFinityDocumentField> result = new ArrayList<>();
+        List<DocumentField> result = new ArrayList<>();
         Multimap<String, Object> clientFields = executeArgs.getClientFields();
         Map<String, MetadataDTO> metadataMap = executeArgs.getMetadataMap();
 
@@ -70,8 +70,10 @@ public class DatasourceExecutor {
                         fieldName, responses, executeArgs.getDocumentTypeName());
             }
 
-            Object fieldValue = responses.stream().findFirst().get().getValue();
-            result.add(new DocFinityDocumentField(fieldMetadata.getName(), fieldValue));
+            List<Object> fieldValues =
+                    responses.stream().map(r -> r.getValue()).collect(Collectors.toList());
+
+            result.add(new DocumentField(fieldMetadata.getName(), fieldValues));
         }
 
         return result;

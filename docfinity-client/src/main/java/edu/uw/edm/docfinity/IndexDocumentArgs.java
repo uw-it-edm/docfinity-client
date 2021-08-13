@@ -1,14 +1,18 @@
 package edu.uw.edm.docfinity;
 
-import com.google.common.collect.Multimap;
+import lombok.Getter;
 
-public interface IndexDocumentArgs {
-    /** Category name to index document. */
-    String getCategoryName();
+/** Encapsulates the arguments for indexing a document that already exists. */
+public class IndexDocumentArgs extends IndexDocumentArgsBase<IndexDocumentArgs> {
+    /** Identifier of document to index. */
+    @Getter private final String documentId;
 
-    /** Document type name to index document. */
-    String getDocumentTypeName();
+    public IndexDocumentArgs(String documentId) {
+        this.documentId = documentId;
+    }
 
-    /** Map of metadata object names with their value to use when indexing. */
-    Multimap<String, Object> getMetadata();
+    @Override
+    protected IndexDocumentArgs self() {
+        return this;
+    }
 }
