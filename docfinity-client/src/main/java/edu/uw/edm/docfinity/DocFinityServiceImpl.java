@@ -32,9 +32,9 @@ import okio.Buffer;
 @Slf4j
 public class DocFinityServiceImpl implements DocFinityService {
     private final OkHttpClient client;
-    private final HttpUrl docFinityUrl;
     private final String apiKey;
     private final String auditUser;
+    public final HttpUrl docFinityUrl;
 
     private static final String HEADER_XSRF_TOKEN = "X-XSRF-TOKEN";
     private static final String HEADER_XSRF_TOKEN_VALUE = "edm-token";
