@@ -86,6 +86,12 @@ public class DocFinityServiceImpl implements DocFinityService {
         }
     }
 
+    public String getRawRequest(Request request) throws IOException {
+        try (Response response = client.newCall(request).execute()) {
+            return response.body().string();
+        }
+    }
+
     @Override
     public DocumentTypeDTOSearchResult getDocumentTypes(String categoryName, String documentTypeName)
             throws IOException {
