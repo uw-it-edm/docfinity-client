@@ -1,3 +1,5 @@
+**IMPORTANT** Repository has been archived, functionality has been ported to https://github.com/uw-it-edm/document-api.
+
 # DocFinity Client
 
 Java client library to create and update documents in DocFinity.
